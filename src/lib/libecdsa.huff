@@ -6,11 +6,21 @@
 #include "./libstore.huff"
 #include "./liberr.huff"
 
-/// Prefix ("\x19Ethereum Signed Message:\n32")
+/// Prefix: "\x19Ethereum Signed Message:\n32"
 #define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a5c6e3332;
 #define constant PREFIX_LEN = 0x3a
 
-/// Computes the hash.
+/// ## Computes the Signature Hash
+///
+/// ### Directives
+///
+/// 1. Copies calldata (without the signature array) to memory.
+/// 2. Hashes the calldata.
+/// 3. Writes the prefix "\x19Ethereum Signed Message:\n32" to memory
+/// 4. Writes the intermediate hash to memory directly after the prefix
+/// 5. Hashes the prefix and intermediate hash.
+///
+/// ### Pseudocode Representation
 ///
 /// ```
 /// hash("\x19Ethereum Signed Message:\n32", hash(id, target, value, deadline, payload))
@@ -35,55 +45,82 @@
     sha3                // [hash]
 }
 
+/// ## Verify Signatures
+///
+/// ### Directives
+///
+/// 1. Store the has in memory at slot zero (required for `ECRECOVER` macro).
+/// 2. Compute the end of the signature array.
+/// 3. Schedule the stack for the loop.
+/// 4. Start the loop.
+/// 5. Recover the signer's address for the current signature.
+/// 6. Check if the signer's address is greater than the last and that the signer is authorized.
+/// 7. Bitwise `and` the result with the `all_success` accumulator.
+/// 8. Update the pointer to the next signature.
+/// 9. If the pointer is less than the end of the signature array, return to step 4.
+/// 10. If the `all_success` is one, then every operation succeeded, else it failed, so we revert.
+///
+/// ### Execution Considerations
+///
+/// - The `all_success` accumulates the "success" of every operation in the loop.
+/// - The `prev_signer` starts at zero and MUST increase on each iteration. See the README for more.
+/// - The `THROW_AUTH` macro is bad UX, therefore clients SHOULD verify all signatures offchain.
+///
+/// ### Panics
+///
+/// - If any signer is not authorized.
+/// - If any signer's address is not greater than the last.
 #define macro VERIFY_SIGS() = takes (3) returns (0) {
     // takes            // [hash, sigs_len, sigs_ptr]
     0x00                // [mem_ptr, hash, sigs_len, sigs_ptr]
     mstore              // [sigs_len, sigs_ptr]
-    0x65                // [sig_len, sigs_len, sigs_ptr]
+    0x41                // [sig_len, sigs_len, sigs_ptr]
     mul                 // [total_sigs_len, sigs_ptr]
     dup2                // [sigs_ptr, total_sigs_len, sigs_ptr]
     add                 // [final_sig_ptr, sig_ptr]
     swap1               // [sig_ptr, final_sig_ptr]
-    0x01                // [is_success, sig_ptr, final_sig_ptr]
-    0x00                // [last_signer, is_success, sig_ptr, final_sig_ptr]
-    loopstart:          // [last_signer, is_success, sig_ptr, final_sig_ptr]
-        dup3            // [sig_ptr, last_signer, is_success, sig_ptr, final_sig_ptr]
-        ECRECOVER()     // [signer, last_signer, is_success, sig_ptr, final_sig_ptr]
-        swap1           // [last_signer, signer, is_success, sig_ptr, final_sig_ptr]
-        dup2            // [signer, last_signer, signer, is_success, sig_ptr, final_sig_ptr]
-        gt              // [singer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
-        dup2            // [signer, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
-        AUTH_SLOT()     // [auth_slot, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
-        sload           // [is_auth, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
-        and             // [signer_valid, signer, is_success, sig_ptr, final_sig_ptr]
-        swap1           // [signer, signer_valid, is_success, sig_ptr, final_sig_ptr]
-        swap2           // [is_success, signer_valid, signer, sig_ptr, final_sig_ptr]
-        and             // [is_success, signer, sig_ptr, final_sig_ptr]
-        swap1           // [signer, is_success, sig_ptr, final_sig_ptr]
-        swap2           // [sig_ptr, is_success, signer, final_sig_ptr]
-        0x65            // [sig_len, sig_ptr, is_success, signer, final_sig_ptr]
-        add             // [new_sig_ptr, is_success, signer, final_sig_ptr]
-        swap2           // [signer, is_success, new_sig_ptr, final_sig_ptr]
-        dup3            // [new_sig_ptr, signer, is_success, new_sig_ptr, final_sig_ptr]
-        dup5            // [final_sig_ptr, new_sig_ptr, signer, is_success, new_sig_ptr, final_sig_ptr]
-        eq              // [is_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
-        iszero          // [not_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
-        loopstart       // [loopstart_dest, not_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
-        jumpi           // [signer, is_success, new_sig_ptr, final_sig_ptr]
-    pop                 // [is_success, new_sig_ptr, final_sig_ptr]
-    is_success          // [is_success_dest, is_success, new_sig_ptr, final_sig_ptr]
-    jumpi               // [new_sig_ptr, final_sig_ptr]
+    0x00                // [prev_signer, sig_ptr, final_sig_ptr]
+    swap1               // [sig_ptr, prev_signer, final_sig_ptr]
+    0x01                // [all_success, sig_ptr, prev_signer, final_sig_ptr]
+    loop_start:         // [all_success, sig_ptr, prev_signer, final_sig_ptr]
+        dup2            // [sig_ptr, all_success, sig_ptr, prev_signer, final_sig_ptr]
+        0x41            // [sig_len, sig_ptr, all_success, sig_ptr, prev_signer, final_sig_ptr]
+        add             // [next_sig_ptr, all_success, sig_ptr, prev_signer, final_sig_ptr]
+        swap2           // [sig_ptr, all_success, next_sig_ptr, prev_signer, final_sig_ptr]
+        ECRECOVER()     // [signer, all_success, next_sig_ptr, prev_signer, final_sig_ptr]
+        swap3           // [prev_signer, all_success, next_sig_ptr, signer, final_sig_ptr]
+        dup4            // [signer, prev_signer, all_success, next_sig_ptr, signer, final_sig_ptr]
+        gt              // [signer_gt_prev, all_success, next_sig_ptr, signer, final_sig_ptr]
+        dup4            // [signer, signer_gt_prev, all_success, next_sig_ptr, signer, final_sig_ptr]
+        AUTH_SLOT()     // [signer_auth_slot, signer_gt_prev, all_success, next_sig_ptr, signer, final_sig_ptr]
+        sload           // [signer_authorized, signer_gt_prev, all_success, next_sig_ptr, signer, final_sig_ptr]
+        and             // [signer_valid, all_success, next_sig_ptr, signer, final_sig_ptr]
+        and             // [all_success, next_sig_ptr, signer, final_sig_ptr]
+        dup4            // [final_sig_ptr, all_success, next_sig_ptr, signer, final_sig_ptr]
+        dup3            // [next_sig_ptr, final_sig_ptr, all_success, next_sig_ptr, signer, final_sig_ptr]
+        lt              // [continue_loop, all_success, next_sig_ptr, signer, final_sig_ptr]
+        loop_start      // [loop_start_dest, continue_loop, all_success, next_sig_ptr, signer, final_sig_ptr]
+        jumpi           // [all_success, next_sig_ptr, signer, final_sig_ptr]
+    all_success         // [all_success_dest, all_success, next_sig_ptr, signer, final_sig_ptr]
+    jumpi               // [next_sig_ptr, signer, final_sig_ptr]
         THROW_AUTH()    // []
-    is_success:         // [new_sig_ptr, final_sig_ptr]
-        pop pop         // []
-
+    all_success:        // []
 }
 
-/// Verifies a packed signature
+/// ## Elliptic Curve Address Recovery
 ///
-/// The hash is stored in memory at slot zero.
+/// > Note: The hash is stored in memory at slot zero.
 ///
-/// Signature is encoded as follows.
+/// ### Directives
+///
+/// 1. Load `v` byte from calldata and cast to u8.
+/// 2. Store `v` in memory.
+/// 3. Copy `r` and `s` directly from calldata to memory.
+/// 4. Call to ecrecover with the returned data being written to memory at offst `0x80`.
+/// 5. Discard the `success` boolean, as the only revert case is "out of gas".
+/// 6. Load the returned address from memory.
+///
+/// ### Signature Encoding
 ///
 /// `v . r . s`
 ///
@@ -103,9 +140,9 @@
     swap1                   // [sig_ptr, rs_len]
     0x01                    // [one, sig_ptr, rs_len]
     add                     // [rs_ptr, rs_len]
-    0x21                    // [mem_ptr, rs_ptr, rs_len]
+    0x40                    // [mem_ptr, rs_ptr, rs_len]
     calldatacopy            // []
-    0x61                    // [ret_ptr]
+    0x80                    // [ret_ptr]
     0x20                    // [ret_len, ret_ptr]
     dup2                    // [ret_ptr, ret_len, ret_ptr]
     0x80                    // [arg_len, ret_ptr, ret_len, ret_ptr]

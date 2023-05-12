@@ -15,7 +15,7 @@
 /// Dispatch Failure Error.
 #define error Dispatch()
 
-/// Throw Authentication Error.
+/// ## Throw Authentication Error
 #define macro THROW_AUTH() = takes (0) returns (0) {
     __ERROR(Auth)   // [auth_err]
     0x00            // [mem_ptr, auth_err]
@@ -25,7 +25,7 @@
     revert          // []
 }
 
-/// Throw Threshold Error.
+/// ## Throw Threshold Error
 #define macro THROW_THRESH() = takes (0) returns (0) {
     __ERROR(Threshold)  // [thresh_err]
     0x00                // [mem_ptr, thresh_err]
@@ -35,7 +35,7 @@
     revert              // []
 }
 
-/// Throw Deadline Error.
+/// ## Throw Deadline Error
 #define macro THROW_DEADLINE() = takes (0) returns (0) {
     __ERROR(Deadline)   // [deadline_err]
     0x00                // [mem_ptr, deadline_err]
@@ -45,7 +45,7 @@
     revert              // []
 }
 
-/// Throw Dispatch Error.
+/// ## Throw Dispatch Error
 #define macro THROW_DISPATCH() = takes (0) returns (0) {
     __ERROR(Dispatch)   // [dispatch_err]
     0x00                // [mem_ptr, dispatch_err]
