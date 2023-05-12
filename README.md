@@ -20,6 +20,14 @@ The `syscall` function, which verifies signatures in a loop, assumes the length 
 array is equal to the current threshold. This means if the threshold is not equal to the signature
 array length, the call will fail.
 
+Additionally, the signature verification loop assumes signatures are in ascending order of
+associated public keys. That is to say each recovered address MUST be greater than the last. If this
+is false, the transaction will revert. This satisfies the following invariants.
+
+1. Any `ecrecover` operation that resolves to the zero address reverts.
+2. Any duplicate signer in the signature list reverts.
+3. Signature malleability reverts.
+
 ## Application Binary Interface
 
 ### Built-in Function Selectors
