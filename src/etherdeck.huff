@@ -161,8 +161,16 @@
 /// 1. Loads deadline from calldata and casts it to a u64.
 /// 2. Asserts the deadlines is greater than the block's timestamp.
 /// 3. Compute the signature hash.
-/// 4. Cache the 'last address' (zero address before the loop).
-/// 5. Loop signatures
+/// 4. Verify signatures.
+/// 5. Increment the `ID` value.
+/// 6. Make the extenal call.
+/// 7. Bubble up the result.
+///
+/// ### Panics
+///
+/// - When the block timestamp is greater than or equal to the deadline
+/// - The `VERIFY_SIGS` macro panics.
+/// - The external call panics.
 #define macro SYSCALL() = takes (0) returns (0) {
     0x43                    // [calldata_ptr]
     calldataload            // [deadline_word]
@@ -184,16 +192,19 @@
         dup2                // [data_len, sigs_len, data_len, payload_len]
         COMPUTE_HASH()      // [hash, sigs_len, data_len, payload_len]
         VERIFY_SIGS()       // [payload_len]
+
         ID_SLOT()           // [id_slot, payload_len]
         sload               // [id, payload_len]
         0x01                // [one, id, payload_len]
         add                 // [new_id, payload_len]
         ID_SLOT()           // [id_slot, new_id, payload_len]
         sstore              // [payload_len]
+
         dup1                // [payload_len, payload_len]
         0x4f                // [payload_ptr, payload_len, payload_len]
         0x00                // [mem_ptr, payload_ptr, payload_len, payload_len]
         calldatacopy        // [payload_len]
+
         0x00                // [ret_ptr, payload_len]
         0x00                // [ret_len, ret_ptr, payload_len]
         swap2               // [payload_len, ret_ptr, ret_len]
@@ -206,19 +217,20 @@
         TO_ADDR()           // [target, value, mem_ptr, payload_len, ret_ptr, ret_len]
         gas                 // [gas, target, value, mem_ptr, payload_len, ret_ptr, ret_len]
         call                // [success]
-        returndatasize      // [ret_size, success]
-        0x00                // [ret_ptr, ret_size, success]
-        0x00                // [mem_ptr, ret_ptr, ret_size, success]
+
+        returndatasize      // [ret_len, success]
+        0x00                // [ret_ptr, ret_len, success]
+        0x00                // [mem_ptr, ret_ptr, ret_len, success]
         returndatacopy      // [success]
-        success             // [success_dest, success]
+        syscall_success     // [syscall_success_dest, success]
         jumpi               // []
-            returndatasize  // [ret_size]
-            0x00            // [ret_ptr, ret_size]
+            returndatasize  // [ret_len]
+            0x00            // [mem_ptr, ret_len]
             revert          // []
-        success:            // []
-        returndatasize      // [ret_size]
-        0x00                // [ret_ptr, ret_size]
-        return              // []
+        syscall_success:    // []
+            returndatasize  // [ret_len]
+            0x00            // [mem_ptr, ret_len]
+            return          // []
 }
 
 /// ## Use Shard
