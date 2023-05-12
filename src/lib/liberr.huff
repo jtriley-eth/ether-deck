@@ -1,0 +1,56 @@
+// -------------------------------------------------------------------------------------------------
+//! # Lib Err
+//!
+//! Error Handler Library.
+
+/// Authentication Error.
+#define error Auth()
+
+/// Insufficient Threshold Error.
+#define error Threshold()
+
+/// Deadline Exceeded Error.
+#define error Deadline()
+
+/// Dispatch Failure Error.
+#define error Dispatch()
+
+/// Throw Authentication Error.
+#define macro THROW_AUTH() = takes (0) returns (0) {
+    __ERROR(Auth)   // [auth_err]
+    0x00            // [mem_ptr, auth_err]
+    mstore          // []
+    0x04            // [mem_len]
+    0x00            // [mem_ptr, mem_len]
+    revert          // []
+}
+
+/// Throw Threshold Error.
+#define macro THROW_THRESH() = takes (0) returns (0) {
+    __ERROR(Threshold)  // [thresh_err]
+    0x00                // [mem_ptr, thresh_err]
+    mstore              // []
+    0x04                // [mem_len]
+    0x00                // [mem_ptr, mem_len]
+    revert              // []
+}
+
+/// Throw Deadline Error.
+#define macro THROW_DEADLINE() = takes (0) returns (0) {
+    __ERROR(Deadline)   // [deadline_err]
+    0x00                // [mem_ptr, deadline_err]
+    mstore              // []
+    0x04                // [mem_len]
+    0x00                // [mem_ptr, mem_len]
+    revert              // []
+}
+
+/// Throw Dispatch Error.
+#define macro THROW_DISPATCH() = takes (0) returns (0) {
+    __ERROR(Dispatch)   // [dispatch_err]
+    0x00                // [mem_ptr, dispatch_err]
+    mstore              // []
+    0x04                // [mem_len]
+    0x00                // [mem_ptr, mem_len]
+    revert              // []
+}

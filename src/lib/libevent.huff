@@ -1,0 +1,40 @@
+// -------------------------------------------------------------------------------------------------
+//! # Lib Event
+//!
+//! Event Logging Library
+//!
+//! > Note: We assume the `ptr` and `len` arguments to `logN` are on the stack to allow for more
+//! > efficient stack scheduling.
+
+#define event AuthSet(address indexed account, bool indexed auth)
+#define event ThresholdSet(uint8 indexed threshold)
+#define event ShardSet(bytes4 indexed selector, address indexed target)
+#define event Syscall(uint256 indexed id)
+
+/// Logs AuthSet.
+#define macro LOG_AUTH_SET() = takes (4) returns (0) {
+    // takes:                   // [account, auth, ptr, len]
+    __EVENT_HASH(AuthSet)       // [hash, account, auth, ptr, len]
+    log3                        // []
+}
+
+/// Logs ThresholdSet.
+#define macro LOG_THRESHOLD_SET() = takes (3) returns (0) {
+    // takes:                   // [threshold, ptr, len]
+    __EVENT_HASH(ThresholdSet)  // [hash, threshold, ptr, len]
+    log2                        // []
+}
+
+/// Logs ShardSet.
+#define macro LOG_SHARD_SET() = takes (4) returns (0) {
+    // takes:                   // [selector, target, ptr, len]
+    __EVENT_HASH(ShardSet)      // [hash]
+    log2                        // []
+}
+
+/// Logs Syscall.
+#define macro LOG_SYSCALL() = takes (3) returns (0) {
+    // takes:                   // [id, ptr, len]
+    __EVENT_HASH(Syscall)       // [hash, id, ptr, len]
+    log2                        // []
+}

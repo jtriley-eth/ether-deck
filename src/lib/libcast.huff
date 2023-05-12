@@ -1,0 +1,39 @@
+// -------------------------------------------------------------------------------------------------
+//! # Lib Cast
+//!
+//! Type casting library using bitshift ops.
+
+/// Cast data to address using bit shifting.
+#define macro TO_ADDR() = takes (1) returns (1) {
+    // takes:       // [unsanitized_addr]
+    0x60            // [shift, unsanitized_addr]
+    shr             // [addr]
+}
+
+/// Cast data to u88 using bit shifting.
+#define macro TO_U88() = takes (1) returns (1) {
+    // takes:       // [unsanitized_u88]
+    0xa8            // [shift, unsanitized_u88]
+    shr             // [u88]
+}
+
+/// Cast data to u64 using bit shifting.
+#define macro TO_U64() = takes (1) returns (1) {
+    // takes:       // [unsanitized_u64]
+    0xc0            // [shift, unsanitized_u64]
+    shr             // [u64]
+}
+
+/// Cast data to u32 using bit shifting.
+#define macro TO_U32() = takes (1) returns (1) {
+    // takes:       // [unsanitized_u32]
+    0xe0            // [shift, unsanitized_u32]
+    shr             // [u32]
+}
+
+/// Cast data to u8 using bit shifting.
+#define macro TO_U8() = takes (1) returns (1) {
+    // takes:       // [unsanitized_u8]
+    0xf0            // [shift, unsanitized_u8]
+    shr             // [u8]
+}

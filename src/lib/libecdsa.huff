@@ -1,0 +1,118 @@
+// -------------------------------------------------------------------------------------------------
+//! # Elliptic Curve Digital Signature Algorithm Library
+//!
+//! ECDSA Operations, Specific to the Ether-Deck
+
+#include "./libstore.huff"
+#include "./liberr.huff"
+
+/// Prefix ("\x19Ethereum Signed Message:\n32")
+#define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a5c6e3332;
+#define constant PREFIX_LEN = 0x3a
+
+/// Computes the hash.
+///
+/// ```
+/// hash("\x19Ethereum Signed Message:\n32", hash(id, target, value, deadline, payload))
+/// ```
+#define macro COMPUTE_HASH() = takes (1) returns (1) {
+    // takes:           // [data_len]
+    dup1                // [data_len, data_len]
+    0x04                // [calldata_ptr, data_len, data_len]
+    0x00                // [mem_ptr, calldata_ptr, data_len, data_len]
+    calldatacopy        // [data_len]
+    0x00                // [mem_ptr, data_len]
+    sha3                // [intermediate_hash]
+    [PREFIX_LEN]        // [prefix_len, intermediate_hash]
+    [PREFIX]            // [prefix, prefix_len, intermediate_hash]
+    0x00                // [mem_ptr, prefix, prefix_len, intermediate_hash]
+    mstore              // [prefix_len, intermediate_hash]
+    mstore              // []
+    0x20                // [word_size]
+    [PREFIX_LEN]        // [prefix_len, word_size]
+    add                 // [msg_len]
+    0x00                // [mem_ptr, msg_len]
+    sha3                // [hash]
+}
+
+#define macro VERIFY_SIGS() = takes (3) returns (0) {
+    // takes            // [hash, sigs_len, sigs_ptr]
+    0x00                // [mem_ptr, hash, sigs_len, sigs_ptr]
+    mstore              // [sigs_len, sigs_ptr]
+    0x65                // [sig_len, sigs_len, sigs_ptr]
+    mul                 // [total_sigs_len, sigs_ptr]
+    dup2                // [sigs_ptr, total_sigs_len, sigs_ptr]
+    add                 // [final_sig_ptr, sig_ptr]
+    swap1               // [sig_ptr, final_sig_ptr]
+    0x01                // [is_success, sig_ptr, final_sig_ptr]
+    0x00                // [last_signer, is_success, sig_ptr, final_sig_ptr]
+    loopstart:          // [last_signer, is_success, sig_ptr, final_sig_ptr]
+        dup3            // [sig_ptr, last_signer, is_success, sig_ptr, final_sig_ptr]
+        ECRECOVER()     // [signer, last_signer, is_success, sig_ptr, final_sig_ptr]
+        swap1           // [last_signer, signer, is_success, sig_ptr, final_sig_ptr]
+        dup2            // [signer, last_signer, signer, is_success, sig_ptr, final_sig_ptr]
+        gt              // [singer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
+        dup2            // [signer, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
+        AUTH_SLOT()     // [auth_slot, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
+        sload           // [is_auth, signer_gt_last, signer, is_success, sig_ptr, final_sig_ptr]
+        and             // [signer_valid, signer, is_success, sig_ptr, final_sig_ptr]
+        swap1           // [signer, signer_valid, is_success, sig_ptr, final_sig_ptr]
+        swap2           // [is_success, signer_valid, signer, sig_ptr, final_sig_ptr]
+        and             // [is_success, signer, sig_ptr, final_sig_ptr]
+        swap1           // [signer, is_success, sig_ptr, final_sig_ptr]
+        swap2           // [sig_ptr, is_success, signer, final_sig_ptr]
+        0x65            // [sig_len, sig_ptr, is_success, signer, final_sig_ptr]
+        add             // [new_sig_ptr, is_success, signer, final_sig_ptr]
+        swap2           // [signer, is_success, new_sig_ptr, final_sig_ptr]
+        dup3            // [new_sig_ptr, signer, is_success, new_sig_ptr, final_sig_ptr]
+        dup5            // [final_sig_ptr, new_sig_ptr, signer, is_success, new_sig_ptr, final_sig_ptr]
+        eq              // [is_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
+        iszero          // [not_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
+        loopstart       // [loopstart_dest, not_final_sig, signer, is_success, new_sig_ptr, final_sig_ptr]
+        jumpi           // [signer, is_success, new_sig_ptr, final_sig_ptr]
+    pop                 // [is_success, new_sig_ptr, final_sig_ptr]
+    is_success          // [is_success_dest, is_success, new_sig_ptr, final_sig_ptr]
+    jumpi               // [new_sig_ptr, final_sig_ptr]
+        THROW_AUTH()    // []
+    is_success:         // [new_sig_ptr, final_sig_ptr]
+        pop pop         // []
+
+}
+
+/// Verifies a packed signature
+///
+/// The hash is stored in memory at slot zero.
+///
+/// Signature is encoded as follows.
+///
+/// `v . r . s`
+///
+/// | name | size (bytes) |
+/// | ---- | ------------ |
+/// | v    | 1            |
+/// | r    | 32           |
+/// | s    | 32           |
+#define macro ECRECOVER() = takes (1) returns (1) {
+    // takes:               // [sig_ptr]
+    dup1                    // [sig_ptr, sig_ptr]
+    mload                   // [v_word, sig_ptr]
+    TO_U8()                 // [v, sig_ptr]
+    0x20                    // [mem_ptr, v, sig_ptr]
+    mstore                  // [sig_ptr]
+    0x40                    // [rs_len, sig_ptr]
+    swap1                   // [sig_ptr, rs_len]
+    0x01                    // [one, sig_ptr, rs_len]
+    add                     // [rs_ptr, rs_len]
+    0x21                    // [mem_ptr, rs_ptr, rs_len]
+    calldatacopy            // []
+    0x61                    // [ret_ptr]
+    0x20                    // [ret_len, ret_ptr]
+    dup2                    // [ret_ptr, ret_len, ret_ptr]
+    0x80                    // [arg_len, ret_ptr, ret_len, ret_ptr]
+    0x00                    // [arg_ptr, arg_len, ret_ptr, ret_len, ret_ptr]
+    0x01                    // [ecrecover, arg_ptr, arg_len, ret_ptr, ret_len, ret_ptr]
+    gas                     // [gas, ecrecover, arg_ptr, arg_len, ret_ptr, ret_len, ret_ptr]
+    staticcall              // [success, ret_ptr]
+    pop                     // [ret_ptr]
+    mload                   // [signer]
+}

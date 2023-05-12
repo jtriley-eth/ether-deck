@@ -1,0 +1,79 @@
+// -------------------------------------------------------------------------------------------------
+//! # Lib ABI
+//!
+//! Application Binary Interface Library
+
+#define constant SET_AUTH_SELECTOR = 0x00000001
+#define constant SET_THRESHOLD_SELECTOR = 0x00000002
+#define constant SET_SHARD_SELECTOR = 0x00000003
+#define constant SYSCALL = 0x00000004
+
+/// Is Set Authorization Call.
+///
+/// Calldata Layout
+///
+/// `selector . account . auth`
+///
+/// | name     | size (bytes) |
+/// | -------- | ------------ |
+/// | selector | 4            |
+/// | account  | 20           |
+/// | auth     | 1            |
+#define macro IS_SET_AUTH() = takes (1) returns (1) {
+    // takes:                   // [selector]
+    [SET_AUTH_SELECTOR]         // [set_auth_selector, selector]
+    eq                          // [is_set_auth]
+}
+
+/// Is Set Threshold Call.
+///
+/// Calldata Layout
+///
+/// `selector . threshold`
+///
+/// | name      | size (bytes) |
+/// | --------- | ------------ |
+/// | selector  | 4            |
+/// | threshold | 1            |
+#define macro IS_SET_THRESHOLD() = takes (1) returns (1) {
+    // takes:                   // [selector]
+    [SET_THRESHOLD_SELECTOR]    // [set_threshold_selector, selector]
+    eq                          // [is_set_threshold]
+}
+
+/// Is Set Shard Call.
+///
+/// Calldata Layout
+///
+/// `selector . selector_to_reg . target`
+///
+/// | name            | size (bytes) |
+/// | --------------- | ------------ |
+/// | selector        | 4            |
+/// | selector to reg | 4            |
+/// | target          | 20           |
+#define macro IS_SET_SHARD() = takes (1) returns (1) {
+    // takes:                   // [selector]
+    [SET_SHARD_SELECTOR]        // [set_shard_selector, selector]
+    eq                          // [is_set_shard]
+}
+
+/// Is Syscall Call.
+///
+/// Calldata Layout
+///
+/// `id . target . value . deadline . payload . sigs`
+///
+/// | name        | size (bytes)   |
+/// | ----------- | -------------- |
+/// | id          | 32             |
+/// | target      | 20             |
+/// | value       | 11             |
+/// | deadline    | 8              |
+/// | payload     | n              |
+/// | sigs        | threshold * 96 |
+#define macro IS_SYSCALL() = takes (1) returns (1) {
+    // takes:                   // [selector]
+    [SYSCALL]                   // [syscall_selector, selector]
+    eq                          // [is_syscall]
+}

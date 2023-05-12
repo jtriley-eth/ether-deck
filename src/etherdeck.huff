@@ -1,0 +1,270 @@
+// -------------------------------------------------------------------------------------------------
+//! # Ether Deck
+//!
+//! Extensible, Optimized Smart Wallet
+
+#include "./lib/libabi.huff"
+#include "./lib/libcast.huff"
+#include "./lib/liberr.huff"
+#include "./lib/libevent.huff"
+#include "./lib/libstore.huff"
+
+/// ## Ether Deck Entry Point
+///
+/// ### Directives
+///
+/// 1. Loads the selector word from calldata and casts to a bytes4 (u32).
+/// 2. If the selector maps to a built-in function, dispatch to that function.
+/// 3. If the selector does not map to a built-in function, check if the shard is set.
+/// 4. If the shard is set, we delegatecall to it and bubble up the returned data.
+/// 5. If the selector neither maps to a shard nor a built-in function, revert.
+///
+/// ### Panics
+///
+/// - If the selector does not map to a built-in function and the shard is not set.
+/// - If the dispatched built-in function reverts.
+/// - If the shard reverts.
+/// - If the selector neither maps to a shard nor a build-in function.
+#define macro MAIN() = takes(0) returns (0) {
+    0x00 calldataload TO_U32()  // [selector]
+
+    // checks built-ins
+    dup1 IS_SET_AUTH() set_auth jumpi
+    dup1 IS_SET_THRESHOLD() set_threshold jumpi
+    dup1 IS_SET_SHARD() set_shard jumpi
+    dup1 IS_QUEUE_SYSCALL() queue_syscall jumpi
+    dup1 IS_SIGN_SYSCALL() sign_syscall jumpi
+    dup1 IS_SYSCALL() syscall jumpi
+    
+    // checks if shard is set for selector
+    TRY_USE_SHARD()
+
+    // if execution has not halted by now, revert
+    THROW_DISPATCH()
+
+    set_auth: SET_AUTH()
+    set_threshold: SET_THRESHOLD()
+    set_shard: SET_SHARD()
+    queue_syscall: QUEUE_SYSCALL()
+    sign_syscall: SIGN_SYSCALL()
+    syscall: SYSCALL()
+}
+
+/// ## Set Authorized Account
+///
+/// ### Directives
+///
+/// 1. Asserts the context's caller is this contract (MUST be self call).
+/// 2. Schedules the stack for event logging.
+/// 3. Loads the authorization word from calldata and casts to a boolean (u8).
+/// 4. Loads the address word from calldata and casts to an address.
+/// 5. Stores the authorization boolean at the authorization hashmap slot.
+/// 6. Logs the event.
+///
+/// ### Panics
+///
+/// - When the context's caller is not this contract.
+#define macro SET_AUTH() = takes (0) returns (0) {
+    caller                  // [caller]
+    address                 // [self, caller]
+    eq                      // [is_self]
+    is_self                 // [is_self_dest, is_self]
+    jumpi                   // []
+        THROW_AUTH()        // []
+    is_self:                // []
+        0x00 0x00           // [event_ptr, event_len]
+        0x18                // [calldata_ptr, event_ptr, event_len]
+        calldataload        // [auth_word, event_ptr, event_len]
+        TO_U8()             // [auth, event_ptr, event_len]
+        0x04                // [calldata_ptr, auth, event_ptr, event_len]
+        calldataload        // [address_word, auth, event_ptr, event_len]
+        TO_ADDR()           // [address, auth, event_ptr, event_len]
+        dup2 dup2           // [address, auth, address, auth, event_ptr, event_len]
+        AUTH_SLOT()         // [auth_slot, auth, address, auth, event_ptr, event_len]
+        sstore              // [address, auth, event_ptr, event_len]
+        LOG_AUTH_SET()      // []
+        stop                // []
+}
+
+/// ## Set Signature Threshold
+///
+/// ### Directives
+///
+/// 1. Asserts the context's caller is this contract (MUST be self call).
+/// 2. Schedules the stack for event logging.
+/// 3. Loads the threshold word from calldata and casts to a u8.
+/// 4. Stores the threshold at the threshold hashmap slot.
+/// 5. Logs the event.
+///
+/// ### Panics
+///
+/// - When the context's caller is not this contract.
+#define macro SET_THRESHOLD() = takes (0) returns (0) {
+    caller                  // [caller]
+    address                 // [self, caller]
+    eq                      // [is_self]
+    is_self                 // [is_self_dest, is_self]
+    jumpi                   // []
+        THROW_AUTH()        // []
+    is_self:                // []
+        0x00 0x00           // [event_ptr, event_len]
+        0x04                // [calldata_ptr, event_ptr, event_len]
+        calldataload        // [threshold_word, event_ptr, event_len]
+        TO_U8()             // [threshold, event_ptr, event_len]
+        dup1                // [threshold, threshold, event_ptr, event_len]
+        THRESHOLD_SLOT()    // [threshold_slot, threshold, threshold, event_ptr, event_len]
+        sstore              // [threshold, event_ptr, event_len]
+        LOG_THRESHOLD_SET() // []
+        stop                // []
+}
+
+/// ## Set Shard
+///
+/// ### Directives
+///
+/// 1. Asserts the context's caller is this contract (MUST be self call).
+/// 2. Schedules the stack for event logging.
+/// 3. Loads the shard word from calldata and casts to an address.
+/// 4. Loads the selector word from calldata and casts to a u32.
+/// 5. Stores the shard address at the selector hashmap slot.
+/// 6. Logs the event.
+///
+/// ### Panics
+///
+/// - When the context's caller is not this contract.
+#define macro SET_SHARD() = takes (0) returns (0) {
+    caller                  // [caller]
+    address                 // [self, caller]
+    eq                      // [is_self]
+    is_self                 // [is_self_dest, is_self]
+    jumpi                   // []
+        THROW_AUTH()        // []
+    is_self:                // []
+        0x00 0x00           // [event_ptr, event_len]
+        0x08                // [calldata_ptr, event_ptr, event_len]
+        calldataload        // [shard_word, event_ptr, event_len]
+        TO_ADDR()           // [shard, event_ptr, event_len]
+        0x04                // [calldata_ptr, shard, event_ptr, event_len]
+        calldataload        // [selector_word, shard, event_ptr, event_len]
+        TO_U32()            // [selector, shard, event_ptr, event_len]
+        dup2 dup2           // [selector, shard, selector, shard, event_ptr, event_len]
+        SHARD_SLOT()        // [selector_slot, shard, selector, shard, event_ptr, event_len]
+        sstore              // [selector, shard, event_ptr, event_len]
+        LOG_SHARD_SET()     // []
+        stop                // []
+}
+
+/// ## Perform Syscall
+///
+/// ### Directives
+///
+/// 1. Loads deadline from calldata and casts it to a u64.
+/// 2. Asserts the deadlines is greater than the block's timestamp.
+/// 3. Compute the signature hash.
+/// 4. Cache the 'last address' (zero address before the loop).
+/// 5. Loop signatures
+#define macro SYSCALL() = takes (0) returns (0) {
+    0x43                    // [calldata_ptr]
+    calldataload            // [deadline_word]
+    TO_U64()                // [deadline]
+    timestamp               // [now, deadline]
+    lt                      // [valid_time]
+    valid_time              // [valid_time_dest, valid_time]
+    jumpi                   // []
+        THROW_DEADLINE()    // []
+    valid_time:             // []
+        0x4b                // [calldata_ptr]
+        calldataload        // [payload_len_word]
+        TO_U32()            // [payload_len]
+        dup1                // [payload_len, payload_len]
+        0x4f                // [calldata_ptr, payload_len, payload_len]
+        add                 // [data_len, payload_len]
+        THRESHOLD_SLOT()    // [threshold_slot, data_len, payload_len]
+        sload               // [sigs_len, data_len, payload_len]
+        dup2                // [data_len, sigs_len, data_len, payload_len]
+        COMPUTE_HASH()      // [hash, sigs_len, data_len, payload_len]
+        VERIFY_SIGS()       // [payload_len]
+        ID_SLOT()           // [id_slot, payload_len]
+        sload               // [id, payload_len]
+        0x01                // [one, id, payload_len]
+        add                 // [new_id, payload_len]
+        ID_SLOT()           // [id_slot, new_id, payload_len]
+        sstore              // [payload_len]
+        dup1                // [payload_len, payload_len]
+        0x4f                // [payload_ptr, payload_len, payload_len]
+        0x00                // [mem_ptr, payload_ptr, payload_len, payload_len]
+        calldatacopy        // [payload_len]
+        0x00                // [ret_ptr, payload_len]
+        0x00                // [ret_len, ret_ptr, payload_len]
+        swap2               // [payload_len, ret_ptr, ret_len]
+        0x00                // [mem_ptr, payload_len, ret_ptr, ret_len]
+        0x38                // [calldata_ptr, mem_ptr, payload_len, ret_ptr, ret_len]
+        calldataload        // [value_word, mem_ptr, payload_len, ret_ptr, ret_len]
+        TO_U88()            // [value, mem_ptr, payload_len, ret_ptr, ret_len]
+        0x24                // [calldata_ptr, value, mem_ptr, payload_len, ret_ptr, ret_len]
+        calldataload        // [target_word, value, mem_ptr, payload_len, ret_ptr, ret_len]
+        TO_ADDR()           // [target, value, mem_ptr, payload_len, ret_ptr, ret_len]
+        gas                 // [gas, target, value, mem_ptr, payload_len, ret_ptr, ret_len]
+        call                // [success]
+        returndatasize      // [ret_size, success]
+        0x00                // [ret_ptr, ret_size, success]
+        0x00                // [mem_ptr, ret_ptr, ret_size, success]
+        returndatacopy      // [success]
+        success             // [success_dest, success]
+        jumpi               // []
+            returndatasize  // [ret_size]
+            0x00            // [ret_ptr, ret_size]
+            revert          // []
+        success:            // []
+        returndatasize      // [ret_size]
+        0x00                // [ret_ptr, ret_size]
+        return              // []
+}
+
+/// ## Use Shard
+///
+/// ### Directives
+///
+/// 1. Loads the shard from the selector hashmap slot.
+/// 2. Asserts the shard is not null.
+/// 3. Copies the calldata to memory.
+/// 4. Delegate calls the shard.
+/// 5. Bubble up the returned data with return if the call succeeded or with revert if it failed.
+///
+/// ### Panics
+///
+/// - When the delegate call fails.
+#define macro TRY_USE_SHARD() = takes (1) returns (0) {
+    // takes:               // [selector]
+    SHARD_SLOT()            // [shard_slot]
+    sload                   // [shard]
+    dup1                    // [shard, shard]
+    iszero                  // [null_shard, shard]
+    null_shard              // [null_shard_dest, null_shard shard]
+    jumpi                   // [shard]
+        calldatasize        // [calldata_len, shard]
+        0x00                // [calldata_ptr, calldata_len, shard]
+        0x00                // [mem_ptr, calldata_ptr, calldata_len, shard]
+        calldatacopy        // [shard]
+        0x00                // [ret_ptr, shard]
+        calldatasize        // [arg_len, ret_ptr, shard]
+        0x00                // [arg_ptr, arg_len, ret_ptr, shard]
+        0x00                // [ret_len, arg_ptr, arg_len, ret_ptr, shard]
+        swap4               // [shard, arg_ptr, arg_len, ret_ptr, ret_len]
+        gas                 // [gas, shard, arg_ptr, arg_len, ret_ptr, ret_len]
+        delegatecall        // [success]
+        returndatasize      // [ret_len, success]
+        0x00                // [ret_ptr, ret_len, success]
+        0x00                // [mem_ptr, ret_ptr, ret_len, success]
+        returndatacopy      // [success]
+        sucess              // [success_dest, success]
+        jumpi               // []
+            returndatasize  // [ret_len]
+            0x00            // [ret_ptr, ret_len]
+            revert          // []
+        success:            // []
+            returndatasize  // [ret_len]
+            0x00            // [ret_ptr, ret_len]
+            return          // []
+    null_shard:             // []
+}

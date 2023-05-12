@@ -1,0 +1,48 @@
+// -------------------------------------------------------------------------------------------------
+//! # Lib Store
+//!
+//! Storage Library
+
+// Note: Constants are never used directly outside this library. This creates consistent syntax to
+// access storage variables. This incurs no runtime cost.
+#define constant ID_INDEX = FREE_STORAGE_POINTER()
+#define constant THRESHOLD_INDEX = FREE_STORAGE_POINTER()
+#define constant AUTH_INDEX = FREE_STORAGE_POINTER()
+#define constant SHARD_INDEX = FREE_STORAGE_POINTER()
+#define constant SYSCALL_INDEX = FREE_STORAGE_POINTER()
+
+/// Syscall ID Slot
+#define macro ID_SLOT() = takes (0) returns (1) {
+    [ID_INDEX]          // [slot]
+}
+
+/// Syscall Threshold Slot
+#define macro THRESHOLD_SLOT() = takes (0) returns (1) {
+    [THRESHOLD_INDEX]   // [slot]
+}
+
+/// Authentication Slot
+#define macro AUTH_SLOT() = takes (1) returns (1) {
+    // takes:           // [address]
+    [AUTH_INDEX]        // [index, address]
+    0x20                // [mem_ptr, index, address]
+    mstore              // [address]
+    0x00                // [mem_ptr, address]
+    mstore              // []
+    0x40                // [mem_len]
+    0x00                // [mem_ptr, mem_len]
+    sha3                // [slot]
+}
+
+/// Shard Slot
+#define macro SHARD_SLOT() = takes (1) returns (1) {
+    // takes:           // [id]
+    [SHARD_INDEX]       // [index, id]
+    0x20                // [mem_ptr, index, id]
+    mstore              // [id]
+    0x00                // [mem_ptr, id]
+    mstore              // []
+    0x40                // [mem_len]
+    0x00                // [mem_ptr, mem_len]
+    sha3                // [slot]
+}
