@@ -5,9 +5,38 @@
 
 #include "./lib/libabi.huff"
 #include "./lib/libcast.huff"
+#include "./lib/libecdsa.huff"
 #include "./lib/liberr.huff"
 #include "./lib/libevent.huff"
 #include "./lib/libstore.huff"
+
+#define constant RECV_SHARD = 0x00
+#define constant RECV_721 = 0x150b7a02
+#define constant RECV_1155 = 0xf23a6e61
+#define constant RECV_1155_BATCH = 0xbc197c81
+
+#define macro CONSTRUCTOR() = takes (0) returns (0) {
+    0x01 dup1           // [one, one]
+
+    THRESHOLD_SLOT()    // [threshold_slot, one, one]
+    sstore              // [one]
+
+    caller              // [caller, one]
+    AUTH_SLOT()         // [caller_auth_slot, one]
+    sstore              // []
+
+    [RECV_SHARD]        // [shard]
+    dup1 dup1           // [shard, shard, shard]
+
+    [RECV_721]          // [recv721, shard, shard, shard]
+    sstore              // [shard, shard]
+
+    [RECV_1155]         // [recv1155, shard, shard]
+    sstore              // [shard]
+
+    [RECV_1155_BATCH]   // [recv1155b, shard]
+    sstore              // []
+}
 
 /// ## Ether Deck Entry Point
 ///
@@ -29,12 +58,10 @@
     0x00 calldataload TO_U32()  // [selector]
 
     // checks built-ins
+    dup1 IS_SYSCALL() syscall jumpi
     dup1 IS_SET_AUTH() set_auth jumpi
     dup1 IS_SET_THRESHOLD() set_threshold jumpi
     dup1 IS_SET_SHARD() set_shard jumpi
-    dup1 IS_QUEUE_SYSCALL() queue_syscall jumpi
-    dup1 IS_SIGN_SYSCALL() sign_syscall jumpi
-    dup1 IS_SYSCALL() syscall jumpi
     
     // checks if shard is set for selector
     TRY_USE_SHARD()
@@ -45,8 +72,6 @@
     set_auth: SET_AUTH()
     set_threshold: SET_THRESHOLD()
     set_shard: SET_SHARD()
-    queue_syscall: QUEUE_SYSCALL()
-    sign_syscall: SIGN_SYSCALL()
     syscall: SYSCALL()
 }
 
@@ -269,7 +294,7 @@
         0x00                // [ret_ptr, ret_len, success]
         0x00                // [mem_ptr, ret_ptr, ret_len, success]
         returndatacopy      // [success]
-        sucess              // [success_dest, success]
+        success             // [success_dest, success]
         jumpi               // []
             returndatasize  // [ret_len]
             0x00            // [ret_ptr, ret_len]

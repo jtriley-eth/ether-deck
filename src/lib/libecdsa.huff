@@ -7,7 +7,7 @@
 #include "./liberr.huff"
 
 /// Prefix: "\x19Ethereum Signed Message:\n32"
-#define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a5c6e3332;
+#define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a5c6e3332
 #define constant PREFIX_LEN = 0x3a
 
 /// ## Computes the Signature Hash
