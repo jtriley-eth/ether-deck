@@ -10,11 +10,13 @@
 #include "./lib/libevent.huff"
 #include "./lib/libstore.huff"
 
-#define constant RECV_SHARD = 0x00
-#define constant RECV_721 = 0x150b7a02
-#define constant RECV_1155 = 0xf23a6e61
-#define constant RECV_1155_BATCH = 0xbc197c81
-
+/// ## Ether Deck Initialization Code
+///
+/// ### Directives
+///
+/// 1. Sets the initial threshold to one.
+/// 2. Sets the caller to 'authorized'.
+/// 3. (Implicit) returns the runtime bytecode.
 #define macro CONSTRUCTOR() = takes (0) returns (0) {
     0x01 dup1           // [one, one]
 
@@ -23,18 +25,6 @@
 
     caller              // [caller, one]
     AUTH_SLOT()         // [caller_auth_slot, one]
-    sstore              // []
-
-    [RECV_SHARD]        // [shard]
-    dup1 dup1           // [shard, shard, shard]
-
-    [RECV_721]          // [recv721, shard, shard, shard]
-    sstore              // [shard, shard]
-
-    [RECV_1155]         // [recv1155, shard, shard]
-    sstore              // [shard]
-
-    [RECV_1155_BATCH]   // [recv1155b, shard]
     sstore              // []
 }
 
@@ -62,17 +52,17 @@
     dup1 IS_SET_AUTH() set_auth jumpi
     dup1 IS_SET_THRESHOLD() set_threshold jumpi
     dup1 IS_SET_SHARD() set_shard jumpi
-    
+
     // checks if shard is set for selector
     TRY_USE_SHARD()
 
     // if execution has not halted by now, revert
     THROW_DISPATCH()
 
+    syscall: SYSCALL()
     set_auth: SET_AUTH()
     set_threshold: SET_THRESHOLD()
     set_shard: SET_SHARD()
-    syscall: SYSCALL()
 }
 
 /// ## Set Authorized Account
@@ -80,11 +70,10 @@
 /// ### Directives
 ///
 /// 1. Asserts the context's caller is this contract (MUST be self call).
-/// 2. Schedules the stack for event logging.
-/// 3. Loads the authorization word from calldata and casts to a boolean (u8).
-/// 4. Loads the address word from calldata and casts to an address.
-/// 5. Stores the authorization boolean at the authorization hashmap slot.
-/// 6. Logs the event.
+/// 2. Loads the authorization word from calldata and casts to a boolean (u8).
+/// 3. Loads the address word from calldata and casts to an address.
+/// 4. Stores the authorization boolean at the authorization hashmap slot.
+/// 5. Logs the event.
 ///
 /// ### Panics
 ///
@@ -97,16 +86,15 @@
     jumpi                   // []
         THROW_AUTH()        // []
     is_self:                // []
-        0x00 0x00           // [event_ptr, event_len]
-        0x18                // [calldata_ptr, event_ptr, event_len]
-        calldataload        // [auth_word, event_ptr, event_len]
-        TO_U8()             // [auth, event_ptr, event_len]
-        0x04                // [calldata_ptr, auth, event_ptr, event_len]
-        calldataload        // [address_word, auth, event_ptr, event_len]
-        TO_ADDR()           // [address, auth, event_ptr, event_len]
-        dup2 dup2           // [address, auth, address, auth, event_ptr, event_len]
-        AUTH_SLOT()         // [auth_slot, auth, address, auth, event_ptr, event_len]
-        sstore              // [address, auth, event_ptr, event_len]
+        0x18                // [calldata_ptr]
+        calldataload        // [auth_word]
+        TO_U8()             // [auth]
+        0x04                // [calldata_ptr, auth]
+        calldataload        // [address_word, auth]
+        TO_ADDR()           // [address, auth]
+        dup2 dup2           // [address, auth, address, auth]
+        AUTH_SLOT()         // [auth_slot, auth, address, auth]
+        sstore              // [address, auth]
         LOG_AUTH_SET()      // []
         stop                // []
 }
@@ -116,10 +104,9 @@
 /// ### Directives
 ///
 /// 1. Asserts the context's caller is this contract (MUST be self call).
-/// 2. Schedules the stack for event logging.
-/// 3. Loads the threshold word from calldata and casts to a u8.
-/// 4. Stores the threshold at the threshold hashmap slot.
-/// 5. Logs the event.
+/// 2. Loads the threshold word from calldata and casts to a u8.
+/// 3. Stores the threshold at the threshold hashmap slot.
+/// 4. Logs the event.
 ///
 /// ### Panics
 ///
@@ -132,13 +119,12 @@
     jumpi                   // []
         THROW_AUTH()        // []
     is_self:                // []
-        0x00 0x00           // [event_ptr, event_len]
-        0x04                // [calldata_ptr, event_ptr, event_len]
-        calldataload        // [threshold_word, event_ptr, event_len]
-        TO_U8()             // [threshold, event_ptr, event_len]
-        dup1                // [threshold, threshold, event_ptr, event_len]
-        THRESHOLD_SLOT()    // [threshold_slot, threshold, threshold, event_ptr, event_len]
-        sstore              // [threshold, event_ptr, event_len]
+        0x04                // [calldata_ptr]
+        calldataload        // [threshold_word]
+        TO_U8()             // [threshold]
+        dup1                // [threshold, threshold]
+        THRESHOLD_SLOT()    // [threshold_slot, threshold, threshold]
+        sstore              // [threshold]
         LOG_THRESHOLD_SET() // []
         stop                // []
 }
@@ -148,11 +134,10 @@
 /// ### Directives
 ///
 /// 1. Asserts the context's caller is this contract (MUST be self call).
-/// 2. Schedules the stack for event logging.
-/// 3. Loads the shard word from calldata and casts to an address.
-/// 4. Loads the selector word from calldata and casts to a u32.
-/// 5. Stores the shard address at the selector hashmap slot.
-/// 6. Logs the event.
+/// 2. Loads the shard word from calldata and casts to an address.
+/// 3. Loads the selector word from calldata and casts to a u32.
+/// 4. Stores the shard address at the selector hashmap slot.
+/// 5. Logs the event.
 ///
 /// ### Panics
 ///
@@ -165,16 +150,15 @@
     jumpi                   // []
         THROW_AUTH()        // []
     is_self:                // []
-        0x00 0x00           // [event_ptr, event_len]
-        0x08                // [calldata_ptr, event_ptr, event_len]
-        calldataload        // [shard_word, event_ptr, event_len]
-        TO_ADDR()           // [shard, event_ptr, event_len]
-        0x04                // [calldata_ptr, shard, event_ptr, event_len]
-        calldataload        // [selector_word, shard, event_ptr, event_len]
-        TO_U32()            // [selector, shard, event_ptr, event_len]
-        dup2 dup2           // [selector, shard, selector, shard, event_ptr, event_len]
-        SHARD_SLOT()        // [selector_slot, shard, selector, shard, event_ptr, event_len]
-        sstore              // [selector, shard, event_ptr, event_len]
+        0x08                // [calldata_ptr]
+        calldataload        // [shard_word]
+        TO_ADDR()           // [shard]
+        0x04                // [calldata_ptr, shard]
+        calldataload        // [selector_word, shard]
+        TO_U32()            // [selector, shard]
+        dup2 dup2           // [selector, shard, selector, shard]
+        SHARD_SLOT()        // [selector_slot, shard, selector, shard]
+        sstore              // [selector, shard]
         LOG_SHARD_SET()     // []
         stop                // []
 }
@@ -209,13 +193,16 @@
         0x4b                // [calldata_ptr]
         calldataload        // [payload_len_word]
         TO_U32()            // [payload_len]
-        dup1                // [payload_len, payload_len]
-        0x4f                // [calldata_ptr, payload_len, payload_len]
-        add                 // [data_len, payload_len]
-        THRESHOLD_SLOT()    // [threshold_slot, data_len, payload_len]
-        sload               // [sigs_len, data_len, payload_len]
-        dup2                // [data_len, sigs_len, data_len, payload_len]
-        COMPUTE_HASH()      // [hash, sigs_len, data_len, payload_len]
+        dup1 dup1           // [payload_len, payload_len, payload_len]
+        0x4f                // [calldata_ptr, payload_len, payload_len, payload_len]
+        add                 // [sigs_ptr, payload_len, payload_len]
+        swap1               // [payload_len, sigs_ptr, payload_len]
+        0x4b                // [calldata_ptr, payload_len, sigs_ptr, payload_len]
+        add                 // [data_len, sigs_ptr, payload_len]
+        THRESHOLD_SLOT()    // [threshold_slot, data_len, sigs_ptr, payload_len]
+        sload               // [sigs_len, data_len, sigs_ptr, payload_len]
+        swap1               // [data_len, sigs_len, sigs_ptr, payload_len]
+        COMPUTE_HASH()      // [hash, sigs_len, sigs_ptr, payload_len]
         VERIFY_SIGS()       // [payload_len]
 
         ID_SLOT()           // [id_slot, payload_len]

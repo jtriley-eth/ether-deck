@@ -7,8 +7,9 @@
 #include "./liberr.huff"
 
 /// Prefix: "\x19Ethereum Signed Message:\n32"
-#define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a5c6e3332
-#define constant PREFIX_LEN = 0x3a
+#define constant PREFIX = 0x19457468657265756d205369676e6564204d6573736167653a0a333200000000
+#define constant PREFIX_LEN = 0x1c
+#define constant MSG_LEN = 0x3c
 
 /// ## Computes the Signature Hash
 ///
@@ -38,9 +39,7 @@
     0x00                // [mem_ptr, prefix, prefix_len, intermediate_hash]
     mstore              // [prefix_len, intermediate_hash]
     mstore              // []
-    0x20                // [word_size]
-    [PREFIX_LEN]        // [prefix_len, word_size]
-    add                 // [msg_len]
+    [MSG_LEN]           // [msg_len]
     0x00                // [mem_ptr, msg_len]
     sha3                // [hash]
 }
@@ -71,12 +70,12 @@
 /// - If any signer is not authorized.
 /// - If any signer's address is not greater than the last.
 #define macro VERIFY_SIGS() = takes (3) returns (0) {
-    // takes            // [hash, sigs_len, sigs_ptr]
-    0x00                // [mem_ptr, hash, sigs_len, sigs_ptr]
-    mstore              // [sigs_len, sigs_ptr]
-    0x41                // [sig_len, sigs_len, sigs_ptr]
-    mul                 // [total_sigs_len, sigs_ptr]
-    dup2                // [sigs_ptr, total_sigs_len, sigs_ptr]
+    // takes            // [hash, num_of_sigs, sig_ptr]
+    0x00                // [mem_ptr, hash, num_of_sigs, sig_ptr]
+    mstore              // [num_of_sigs, sig_ptr]
+    0x41                // [sig_len, num_of_sigs, sig_ptr]
+    mul                 // [all_sigs_len, sig_ptr]
+    dup2                // [sig_ptr, all_sigs_len, sig_ptr]
     add                 // [final_sig_ptr, sig_ptr]
     swap1               // [sig_ptr, final_sig_ptr]
     0x00                // [prev_signer, sig_ptr, final_sig_ptr]
@@ -104,7 +103,8 @@
     all_success         // [all_success_dest, all_success, next_sig_ptr, signer, final_sig_ptr]
     jumpi               // [next_sig_ptr, signer, final_sig_ptr]
         THROW_AUTH()    // []
-    all_success:        // []
+    all_success:        // [next_sig_ptr, signer, final_sig_ptr]
+        pop pop pop     // []
 }
 
 /// ## Elliptic Curve Address Recovery
@@ -132,7 +132,7 @@
 #define macro ECRECOVER() = takes (1) returns (1) {
     // takes:               // [sig_ptr]
     dup1                    // [sig_ptr, sig_ptr]
-    mload                   // [v_word, sig_ptr]
+    calldataload            // [v_word, sig_ptr]
     TO_U8()                 // [v, sig_ptr]
     0x20                    // [mem_ptr, v, sig_ptr]
     mstore                  // [sig_ptr]

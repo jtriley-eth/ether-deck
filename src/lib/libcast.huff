@@ -34,6 +34,6 @@
 /// Cast data to u8 using bit shifting.
 #define macro TO_U8() = takes (1) returns (1) {
     // takes:       // [unsanitized_u8]
-    0xf0            // [shift, unsanitized_u8]
+    0xf8            // [shift, unsanitized_u8]
     shr             // [u8]
 }

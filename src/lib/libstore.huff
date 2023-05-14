@@ -21,14 +21,14 @@
 /// ## Authentication Slot
 #define macro AUTH_SLOT() = takes (1) returns (1) {
     // takes:           // [address]
-    [AUTH_INDEX]        // [index, address]
-    0x20                // [mem_ptr, index, address]
-    mstore              // [address]
     0x00                // [mem_ptr, address]
+    mstore              // []
+    [AUTH_INDEX]        // [auth_index]
+    0x20                // [mem_ptr, auth_index]
     mstore              // []
     0x40                // [mem_len]
     0x00                // [mem_ptr, mem_len]
-    sha3                // [slot]
+    sha3                // [hash]
 }
 
 /// ## Shard Slot

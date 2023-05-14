@@ -2,39 +2,31 @@
 //! # Lib Event
 //!
 //! Event Logging Library
-//!
-//! > Note: We assume the `ptr` and `len` arguments to `logN` are on the stack to allow for more
-//! > efficient stack scheduling.
 
 #define event AuthSet(address indexed account, bool indexed auth)
 #define event ThresholdSet(uint8 indexed threshold)
 #define event ShardSet(bytes4 indexed selector, address indexed target)
-#define event Syscall(uint256 indexed id)
 
 /// ## Log AuthSet
-#define macro LOG_AUTH_SET() = takes (4) returns (0) {
-    // takes:                   // [account, auth, ptr, len]
-    __EVENT_HASH(AuthSet)       // [hash, account, auth, ptr, len]
+#define macro LOG_AUTH_SET() = takes (2) returns (0) {
+    // takes:                   // [account, auth]
+    __EVENT_HASH(AuthSet)       // [hash, account, auth]
+    0x00 0x00                   // [ptr, len, lash, account, auth]
     log3                        // []
 }
 
 /// ## Log ThresholdSet
-#define macro LOG_THRESHOLD_SET() = takes (3) returns (0) {
-    // takes:                   // [threshold, ptr, len]
-    __EVENT_HASH(ThresholdSet)  // [hash, threshold, ptr, len]
+#define macro LOG_THRESHOLD_SET() = takes (1) returns (0) {
+    // takes:                   // [threshold]
+    __EVENT_HASH(ThresholdSet)  // [hash, threshold]
+    0x00 0x00                   // [ptr, len, hash, threshold]
     log2                        // []
 }
 
 /// ## Log ShardSet
-#define macro LOG_SHARD_SET() = takes (4) returns (0) {
-    // takes:                   // [selector, target, ptr, len]
-    __EVENT_HASH(ShardSet)      // [hash]
-    log2                        // []
-}
-
-/// ## Log Syscall
-#define macro LOG_SYSCALL() = takes (3) returns (0) {
-    // takes:                   // [id, ptr, len]
-    __EVENT_HASH(Syscall)       // [hash, id, ptr, len]
-    log2                        // []
+#define macro LOG_SHARD_SET() = takes (2) returns (0) {
+    // takes:                   // [selector, target]
+    __EVENT_HASH(ShardSet)      // [hash, selector, target]
+    0x00 0x00                   // [ptr, len, hash, selector, target]
+    log3                        // []
 }
