@@ -2,6 +2,21 @@
 
 A gas optimized, extensible smart wallet.
 
+## TODO
+
+- invariant / fuzz test sigs
+- test failures
+- test token receiver shard
+- create & test multi call shard
+- create & test flashloan shard
+- create & test pub storage shard
+- test for events
+- reduce `id` size
+- rename `id` to `nonce`
+- add event to log `id`/`nonce` usage
+- document all assumptions
+- document invariants
+
 ## Security Considerations
 
 Shards are code fragments that may be delegated to if no function selector is matched. This allows
