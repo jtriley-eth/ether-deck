@@ -1,19 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity ^0.8.19;
 
+/// @title Ether Deck Tooling
+/// @notice Pure utility functions for interfacing with the deck 
 library DeckTools {
+    /// @notice Encodes a setAuth call
+    /// @param account The account to set authorization for
+    /// @param authorized Whether the account should be authorized
     function encodeSetAuth(address account, bool authorized) internal pure returns (bytes memory) {
         return abi.encodePacked(bytes4(0x00000001), account, authorized);
     }
 
+    /// @notice Encodes a setThreshold call
+    /// @param threshold The new threshold
     function encodeSetThreshold(uint8 threshold) internal pure returns (bytes memory) {
         return abi.encodePacked(bytes4(0x00000002), threshold);
     }
 
+    /// @notice Encodes a setShard call
+    /// @param shard The shard to set
+    /// @param account The account to set the shard for
     function encodeSetShard(bytes4 shard, address account) internal pure returns (bytes memory) {
         return abi.encodePacked(bytes4(0x00000003), shard, account);
     }
 
+    /// @notice Encodes a syscall
+    /// @param id The syscall id
+    /// @param target The target address
+    /// @param value The value to send
+    /// @param deadline The deadline for the call
+    /// @param payload The payload for the call
+    /// @param signatures The signatures for the call
     function encodeSyscall(
         uint256 id,
         address target,
@@ -31,6 +48,12 @@ library DeckTools {
         );
     }
 
+    /// @notice Hashes a syscall for signing
+    /// @param id The syscall id
+    /// @param target The target address
+    /// @param value The value to send
+    /// @param deadline The deadline for the call
+    /// @param payload The payload for the call
     function hashSyscall(uint256 id, address target, uint88 value, uint64 deadline, bytes memory payload)
         internal
         pure
@@ -44,19 +67,23 @@ library DeckTools {
         );
     }
 
+    /// @notice ID slot on the deck
     function idSlot() internal pure returns (bytes32) {
         return bytes32(0);
     }
 
+    /// @notice Threshold slot on the deck
     function thresholdSlot() internal pure returns (bytes32) {
         return bytes32(uint256(1));
     }
 
+    /// @notice Authorization slot for an account on the deck
     function authSlot(address account) internal pure returns (bytes32) {
         return keccak256(abi.encode(account, 2));
     }
 
+    /// @notice Shard slot for an account on the deck
     function shardSlot(bytes4 selector) internal pure returns (bytes32) {
-        return keccak256(abi.encode(uint32(selector), 3));
+        return keccak256(abi.encode(bytes32(selector), 3));
     }
 }

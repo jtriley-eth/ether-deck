@@ -25,6 +25,11 @@ contract EtherDeckTest is Test {
     address deck;
     address mockTarget;
 
+    event AuthSet(address indexed account, bool indexed auth);
+    event ThresholdSet(uint8 indexed threshold);
+    event ShardSet(bytes4 indexed selector, address indexed shard);
+    event Syscall(uint256 indexed id);
+
     modifier asActor(address actor) {
         vm.startPrank(actor);
         _;
@@ -43,27 +48,40 @@ contract EtherDeckTest is Test {
     }
 
     function testSetAuth() public {
+        vm.expectEmit(true, true, true, true, deck);
+        emit AuthSet(bob, true);
+
         (bool success,) = deck.call(__defaultSyscall(dt.encodeSetAuth(bob, true)));
 
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.authSlot(bob))), 1);
     }
 
-    function testFuzzSetAuth(address actor) public {
-        (bool success,) = deck.call(__defaultSyscall(dt.encodeSetAuth(actor, true)));
+    function testFuzzSetAuth(address account, bool auth) public {
+        vm.expectEmit(true, true, true, true, deck);
+        emit AuthSet(account, auth);
+
+        (bool success,) = deck.call(__defaultSyscall(dt.encodeSetAuth(account, auth)));
 
         assertTrue(success);
-        assertEq(uint256(vm.load(deck, dt.authSlot(actor))), 1);
+        assertTrue(__toBool(vm.load(deck, dt.authSlot(account))) == auth);
     }
 
     function testSetThreshold() public {
+        vm.expectEmit(true, true, true, true, deck);
+        emit ThresholdSet(2);
+
         (bool success,) = deck.call(__defaultSyscall(dt.encodeSetThreshold(2)));
 
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 2);
     }
 
+    /// forge-config: default.fuzz.runs = 256
     function testFuzzSetThreshold(uint8 threshold) public {
+        vm.expectEmit(true, true, true, true, deck);
+        emit ThresholdSet(threshold);
+
         (bool success,) = deck.call(__defaultSyscall(dt.encodeSetThreshold(threshold)));
 
         assertTrue(success);
@@ -73,18 +91,28 @@ contract EtherDeckTest is Test {
     function testSetShard() public {
         bytes4 selector = 0xaabbccdd;
         address shard = mockTarget;
+
+        vm.expectEmit(true, true, true, true, deck);
+        emit ShardSet(selector, shard);
+
         (bool success,) = deck.call(__defaultSyscall(dt.encodeSetShard(selector, shard)));
 
         assertTrue(success);
-        assertEq(address(uint160(uint256(vm.load(deck, dt.shardSlot(selector))))), shard);
+        assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), shard);
     }
 
     function testFuzzSetShard(bytes4 selector, address shard) public {
+        vm.expectEmit(true, true, true, true, deck);
+        emit ShardSet(selector, shard);
+
         (bool success,) = deck.call(__defaultSyscall(dt.encodeSetShard(selector, shard)));
 
         assertTrue(success);
-        assertEq(address(uint160(uint256(vm.load(deck, dt.shardSlot(selector))))), shard);
+        assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), shard);
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Internals
 
     function __defaultSyscall(bytes memory payload) internal view returns (bytes memory) {
         bytes[] memory signatures = new bytes[](1);
@@ -108,5 +136,14 @@ contract EtherDeckTest is Test {
     function __sign(uint256 pk, bytes32 hash) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, hash);
         return abi.encodePacked(v, r, s);
+    }
+
+    function __toBool(bytes32 value) internal pure returns (bool b) {
+        // how hard could this possibly mf be bruv
+        assembly { b := iszero(iszero(value)) }
+    }
+
+    function __toAddr(bytes32 value) internal pure returns (address a) {
+        assembly { a := shr(96, shl(96, value)) }
     }
 }

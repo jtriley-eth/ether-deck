@@ -6,6 +6,7 @@
 #define event AuthSet(address indexed account, bool indexed auth)
 #define event ThresholdSet(uint8 indexed threshold)
 #define event ShardSet(bytes4 indexed selector, address indexed target)
+#define event Syscall(uint256 indexed id)
 
 /// ## Log AuthSet
 #define macro LOG_AUTH_SET() = takes (2) returns (0) {
@@ -29,4 +30,12 @@
     __EVENT_HASH(ShardSet)      // [hash, selector, target]
     0x00 0x00                   // [ptr, len, hash, selector, target]
     log3                        // []
+}
+
+/// ## Log Syscall
+#define macro LOG_SYSCALL() = takes (1) returns (0) {
+    // takes:                   // [id]
+    __EVENT_HASH(Syscall)       // [hash, id]
+    0x00 0x00                   // [ptr, len, hash, id]
+    log2                        // []
 }

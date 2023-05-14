@@ -31,6 +31,13 @@
     shr             // [u32]
 }
 
+/// Cast data to bytes4 using bit shifting.
+#define macro TO_B4() = takes (1) returns (1) {
+    // takes:       // [unsanitized_b4]
+    0xe0 dup1       // [shift, shift, unsanitized_b4]
+    shr shl         // [b4]
+}
+
 /// Cast data to u8 using bit shifting.
 #define macro TO_U8() = takes (1) returns (1) {
     // takes:       // [unsanitized_u8]

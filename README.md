@@ -28,7 +28,7 @@ main wallet, including authorization and threshold slots. It is imperative that 
 taken to avoid storage collisions and to only use trusted code.
 
 The built-in selectors are reserved for the built-in functions and setting the shard address for
-any of them will *not* take precedence over the built-ins. That is to say, selectors that
+any of them will *not* take precedence over the built-ins. That is to say, shard selectors that
 match the built-in selectors will never be delegatecalled to.
 
 The `syscall` function, which verifies signatures in a loop, assumes the length of the signature

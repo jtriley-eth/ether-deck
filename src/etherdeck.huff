@@ -135,7 +135,7 @@
 ///
 /// 1. Asserts the context's caller is this contract (MUST be self call).
 /// 2. Loads the shard word from calldata and casts to an address.
-/// 3. Loads the selector word from calldata and casts to a u32.
+/// 3. Loads the selector word from calldata and casts to a bytes4 (left-aligned).
 /// 4. Stores the shard address at the selector hashmap slot.
 /// 5. Logs the event.
 ///
@@ -155,7 +155,7 @@
         TO_ADDR()           // [shard]
         0x04                // [calldata_ptr, shard]
         calldataload        // [selector_word, shard]
-        TO_U32()            // [selector, shard]
+        TO_B4()             // [selector, shard]
         dup2 dup2           // [selector, shard, selector, shard]
         SHARD_SLOT()        // [selector_slot, shard, selector, shard]
         sstore              // [selector, shard]
@@ -171,9 +171,10 @@
 /// 2. Asserts the deadlines is greater than the block's timestamp.
 /// 3. Compute the signature hash.
 /// 4. Verify signatures.
-/// 5. Increment the `ID` value.
-/// 6. Make the extenal call.
-/// 7. Bubble up the result.
+/// 5. Logs the event.
+/// 6. Increment the `ID` value.
+/// 7. Make the extenal call.
+/// 8. Bubble up the result.
 ///
 /// ### Panics
 ///
@@ -207,6 +208,8 @@
 
         ID_SLOT()           // [id_slot, payload_len]
         sload               // [id, payload_len]
+        dup1                // [id, id, payload_len]
+        LOG_SYSCALL()
         0x01                // [one, id, payload_len]
         add                 // [new_id, payload_len]
         ID_SLOT()           // [id_slot, new_id, payload_len]
