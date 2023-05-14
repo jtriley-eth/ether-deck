@@ -12,10 +12,9 @@ A gas optimized, extensible smart wallet.
 - create & test pub storage shard
 - test for events
 - reduce `id` size
-- rename `id` to `nonce`
-- add event to log `id`/`nonce` usage
 - document all assumptions
 - document invariants
+- tests `id` increment
 
 ## Security Considerations
 
@@ -32,8 +31,9 @@ any of them will *not* take precedence over the built-ins. That is to say, shard
 match the built-in selectors will never be delegatecalled to.
 
 The `syscall` function, which verifies signatures in a loop, assumes the length of the signature
-array is equal to the current threshold. This means if the threshold is not equal to the signature
-array length, the call will fail.
+array is equal to the current threshold. This means if the number of signatures is less than the
+threshold, the call fails. However, since the signatures are appended to the end of the calldata, if
+the number of signatures is greater than the threshold, the remaining signatures will be ignored.
 
 Additionally, the signature verification loop assumes signatures are in ascending order of
 associated public keys. That is to say each recovered address MUST be greater than the last. If this

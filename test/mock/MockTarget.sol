@@ -11,4 +11,18 @@ contract MockTarget {
     function fails() public pure {
         revert Fail();
     }
+
+    fallback() external payable {
+        assembly {
+            mstore(0, callvalue())
+            return(0, 32)
+        }
+    }
+
+    receive() external payable {
+        assembly {
+            mstore(0, callvalue())
+            return(0, 32)
+        }
+    }
 }

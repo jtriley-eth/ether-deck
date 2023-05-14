@@ -209,7 +209,7 @@
         ID_SLOT()           // [id_slot, payload_len]
         sload               // [id, payload_len]
         dup1                // [id, id, payload_len]
-        LOG_SYSCALL()
+        LOG_SYSCALL()       // [id, payload_len]
         0x01                // [one, id, payload_len]
         add                 // [new_id, payload_len]
         ID_SLOT()           // [id_slot, new_id, payload_len]
