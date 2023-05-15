@@ -16,10 +16,11 @@
 /// ### Directives
 ///
 /// 1. Copies calldata (without the signature array) to memory.
-/// 2. Hashes the calldata.
-/// 3. Writes the prefix "\x19Ethereum Signed Message:\n32" to memory
-/// 4. Writes the intermediate hash to memory directly after the prefix
-/// 5. Hashes the prefix and intermediate hash.
+/// 2. Appends the chain id to the calldata in memory.
+/// 3. Hashes the data.
+/// 4. Writes the prefix "\x19Ethereum Signed Message:\n32" to memory
+/// 5. Writes the intermediate hash to memory directly after the prefix
+/// 6. Hashes the prefix and intermediate hash.
 ///
 /// ### Pseudocode Representation
 ///
@@ -32,7 +33,12 @@
     0x04                // [calldata_ptr, data_len, data_len]
     0x00                // [mem_ptr, calldata_ptr, data_len, data_len]
     calldatacopy        // [data_len]
-    0x00                // [mem_ptr, data_len]
+    chainid             // [chainid, data_len]
+    dup2                // [data_len, chainid, data_len]
+    mstore              // [data_len]
+    0x20                // [word_len, data_len]
+    add                 // [total_data_len]
+    0x00                // [mem_ptr, total_data_len]
     sha3                // [intermediate_hash]
     [PREFIX_LEN]        // [prefix_len, intermediate_hash]
     [PREFIX]            // [prefix, prefix_len, intermediate_hash]

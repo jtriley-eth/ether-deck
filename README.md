@@ -4,15 +4,13 @@ A gas optimized, extensible smart wallet.
 
 ## TODO
 
-- invariant / fuzz test sigs
-- test failures
 - test token receiver shard
 - create & test multi call shard
 - create & test flashloan shard
 - create & test pub storage shard
-- reduce `id` size
 - document all assumptions
 - document invariants
+- check error codes in failures
 
 ## Security Considerations
 

@@ -56,6 +56,8 @@ contract EtherDeckTest is Test {
             __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true))
         );
 
+        console.log(block.chainid);
+
         assertTrue(success);
         assertEq(__toBool(vm.load(deck, dt.authSlot(bob))), true);
         assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
@@ -148,7 +150,6 @@ contract EtherDeckTest is Test {
         bytes4 selector = 0xaabbccdd;
         address shard = mockTarget;
 
-
         vm.expectCall(deck, 0, dt.encodeSetShard(selector, shard), 1);
         vm.expectEmit(true, true, true, true, deck);
         emit ShardSet(selector, shard);
@@ -201,7 +202,8 @@ contract EtherDeckTest is Test {
                 target: mockTarget,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
 
@@ -241,7 +243,8 @@ contract EtherDeckTest is Test {
                 target: target,
                 value: value,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
 
@@ -286,7 +289,8 @@ contract EtherDeckTest is Test {
                 target: deck,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
         signatures[1] = __sign(
@@ -296,7 +300,8 @@ contract EtherDeckTest is Test {
                 target: deck,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
 
@@ -323,6 +328,54 @@ contract EtherDeckTest is Test {
         assertEq(uint256(vm.load(deck, dt.idSlot())), 3);
     }
 
+    function testMaxSignatures() public {
+        uint256 id = 0;
+
+        for (uint256 i = 1; i < 255; i++) {
+            (bool authSuccess,)  = deck.call(__selfSyscall(id, PK_ALICE, dt.encodeSetAuth(vm.addr(i), true)));
+            id += 1;
+            assertTrue(authSuccess);
+        }
+
+        assertEq(uint256(vm.load(deck, dt.idSlot())), id);
+        __selfSyscall(id, PK_ALICE, dt.encodeSetThreshold(255));
+
+        bytes memory payload = dt.encodeSetThreshold(1);
+        bytes[] memory signatures = new bytes[](255);
+
+        for (uint256 i = 0; i < 255; i++) {
+            signatures[i] = __sign(
+                i + 1,
+                dt.hashSyscall({
+                    id: id,
+                    target: deck,
+                    value: 0,
+                    deadline: type(uint64).max,
+                    payload: payload,
+                    chainId: block.chainid
+                })
+            );
+        }
+
+        vm.expectCall(deck, 0, payload, 1);
+        vm.expectEmit(true, true, true, true, deck);
+        emit Syscall(id);
+
+        (bool success,) = deck.call(
+            dt.encodeSyscall({
+                id: id,
+                target: deck,
+                value: 0,
+                deadline: type(uint64).max,
+                payload: payload,
+                signatures: signatures
+            })
+        );
+        assertTrue(success);
+        assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 1);
+        assertEq(uint256(vm.load(deck, dt.idSlot())), id + 1);
+    }
+
     function testIgnoreExtraSignatures() public {
         bytes memory payload = dt.encodeSetAuth(bob, true);
         bytes[] memory signatures = new bytes[](2);
@@ -333,7 +386,8 @@ contract EtherDeckTest is Test {
                 target: deck,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
         signatures[1] = __sign(
@@ -343,7 +397,8 @@ contract EtherDeckTest is Test {
                 target: deck,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
 
@@ -433,6 +488,160 @@ contract EtherDeckTest is Test {
         assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
     }
 
+    function testFuzzChainId(uint64 chainId) public {
+        vm.chainId(chainId);
+
+        vm.expectCall(deck, 0, dt.encodeSetAuth(bob, true), 1);
+        vm.expectEmit(true, true, true, true, deck);
+        emit AuthSet(bob, true);
+
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true)));
+        assertTrue(success);
+        assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
+    }
+
+    function testNoHardForkReplay() public {
+        bytes memory payload = dt.encodeSetAuth(bob, true);
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = __sign(
+            PK_ALICE,
+            dt.hashSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: type(uint64).max,
+                payload: payload,
+                chainId: block.chainid
+            })
+        );
+
+        vm.chainId(block.chainid + 1);
+
+        (bool success,) = deck.call(
+            dt.encodeSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: type(uint64).max,
+                payload: payload,
+                signatures: signatures
+            })
+        );
+
+        assertFalse(success);
+        assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
+        assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
+    }
+
+    function testFuzzNoHardForkReplay(uint64 chainId) public {
+        vm.assume(chainId != block.chainid);
+
+        bytes memory payload = dt.encodeSetAuth(bob, true);
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = __sign(
+            PK_ALICE,
+            dt.hashSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: type(uint64).max,
+                payload: payload,
+                chainId: block.chainid
+            })
+        );
+
+        vm.chainId(chainId);
+
+        (bool success,) = deck.call(
+            dt.encodeSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: type(uint64).max,
+                payload: payload,
+                signatures: signatures
+            })
+        );
+
+        assertFalse(success);
+        assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
+        assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
+    }
+
+    function testDeadline() public {
+        bytes memory payload = dt.encodeSetAuth(bob, true);
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = __sign(
+            PK_ALICE,
+            dt.hashSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: uint64(block.timestamp),
+                payload: payload,
+                chainId: block.chainid
+            })
+        );
+
+        vm.warp(block.timestamp + 1);
+
+        (bool success, bytes memory retdata) = deck.call(
+            dt.encodeSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: uint64(block.timestamp),
+                payload: payload,
+                signatures: signatures
+            })
+        );
+
+        assertFalse(success);
+        assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
+        assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
+        assertEq(bytes4(retdata), dt.Deadline.selector);
+    }
+
+    function testFuzzDeadline(uint64 deadline, uint64 minedAt) public {
+        bytes memory payload = dt.encodeSetAuth(bob, true);
+        bytes[] memory signatures = new bytes[](1);
+        signatures[0] = __sign(
+            PK_ALICE,
+            dt.hashSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: deadline,
+                payload: payload,
+                chainId: block.chainid
+            })
+        );
+
+        vm.warp(minedAt);
+
+        (bool success, bytes memory retdata) = deck.call(
+            dt.encodeSyscall({
+                id: 0,
+                target: deck,
+                value: 0,
+                deadline: deadline,
+                payload: payload,
+                signatures: signatures
+            })
+        );
+
+        if (minedAt < deadline) {
+            assertTrue(success);
+            assertTrue(__toBool(vm.load(deck, dt.authSlot(bob))));
+            assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
+        } else {
+            assertFalse(success);
+            assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
+            assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
+            assertEq(bytes4(retdata), dt.Deadline.selector);
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Internals
 
@@ -449,7 +658,8 @@ contract EtherDeckTest is Test {
                 target: deck,
                 value: 0,
                 deadline: type(uint64).max,
-                payload: payload
+                payload: payload,
+                chainId: block.chainid
             })
         );
         return

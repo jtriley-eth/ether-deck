@@ -5,6 +5,7 @@ pragma solidity ^0.8.19;
 /// @notice Pure utility functions for interfacing with the deck 
 library DeckTools {
     error Auth();
+    error Deadline();
     error Threshold();
     error Shard();
     error Syscall();
@@ -59,7 +60,7 @@ library DeckTools {
     /// @param value The value to send
     /// @param deadline The deadline for the call
     /// @param payload The payload for the call
-    function hashSyscall(uint256 id, address target, uint88 value, uint64 deadline, bytes memory payload)
+    function hashSyscall(uint256 id, address target, uint88 value, uint64 deadline, bytes memory payload, uint256 chainId)
         internal
         pure
         returns (bytes32)
@@ -67,7 +68,7 @@ library DeckTools {
         return keccak256(
             abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encodePacked(id, target, value, deadline, uint32(payload.length), payload))
+                keccak256(abi.encodePacked(id, target, value, deadline, uint32(payload.length), payload, chainId))
             )
         );
     }
