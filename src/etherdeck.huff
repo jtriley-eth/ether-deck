@@ -18,14 +18,14 @@
 /// 2. Sets the caller to 'authorized'.
 /// 3. (Implicit) returns the runtime bytecode.
 #define macro CONSTRUCTOR() = takes (0) returns (0) {
-    0x01 dup1           // [one, one]
+    0x01 dup1               // [one, one]
 
-    THRESHOLD_SLOT()    // [threshold_slot, one, one]
-    sstore              // [one]
+    THRESHOLD_SLOT()        // [threshold_slot, one, one]
+    sstore                  // [one]
 
-    caller              // [caller, one]
-    AUTH_SLOT()         // [caller_auth_slot, one]
-    sstore              // []
+    caller                  // [caller, one]
+    AUTH_SLOT(0x00, 0x20)   // [caller_auth_slot, one]
+    sstore                  // []
 }
 
 /// ## Ether Deck Entry Point
@@ -79,24 +79,24 @@
 ///
 /// - When the context's caller is not this contract.
 #define macro SET_AUTH() = takes (0) returns (0) {
-    caller                  // [caller]
-    address                 // [self, caller]
-    eq                      // [is_self]
-    is_self                 // [is_self_dest, is_self]
-    jumpi                   // []
-        THROW_AUTH()        // []
-    is_self:                // []
-        0x18                // [calldata_ptr]
-        calldataload        // [auth_word]
-        TO_U8()             // [auth]
-        0x04                // [calldata_ptr, auth]
-        calldataload        // [address_word, auth]
-        TO_ADDR()           // [address, auth]
-        dup2 dup2           // [address, auth, address, auth]
-        AUTH_SLOT()         // [auth_slot, auth, address, auth]
-        sstore              // [address, auth]
-        LOG_AUTH_SET()      // []
-        stop                // []
+    caller                      // [caller]
+    address                     // [self, caller]
+    eq                          // [is_self]
+    is_self                     // [is_self_dest, is_self]
+    jumpi                       // []
+        THROW_AUTH()            // []
+    is_self:                    // []
+        0x18                    // [calldata_ptr]
+        calldataload            // [auth_word]
+        TO_U8()                 // [auth]
+        0x04                    // [calldata_ptr, auth]
+        calldataload            // [address_word, auth]
+        TO_ADDR()               // [address, auth]
+        dup2 dup2               // [address, auth, address, auth]
+        AUTH_SLOT(0x00, 0x20)   // [auth_slot, auth, address, auth]
+        sstore                  // [address, auth]
+        LOG_AUTH_SET()          // []
+        stop                    // []
 }
 
 /// ## Set Signature Threshold
@@ -143,24 +143,24 @@
 ///
 /// - When the context's caller is not this contract.
 #define macro SET_SHARD() = takes (0) returns (0) {
-    caller                  // [caller]
-    address                 // [self, caller]
-    eq                      // [is_self]
-    is_self                 // [is_self_dest, is_self]
-    jumpi                   // []
-        THROW_AUTH()        // []
-    is_self:                // []
-        0x08                // [calldata_ptr]
-        calldataload        // [shard_word]
-        TO_ADDR()           // [shard]
-        0x04                // [calldata_ptr, shard]
-        calldataload        // [selector_word, shard]
-        TO_B4()             // [selector, shard]
-        dup2 dup2           // [selector, shard, selector, shard]
-        SHARD_SLOT()        // [selector_slot, shard, selector, shard]
-        sstore              // [selector, shard]
-        LOG_SHARD_SET()     // []
-        stop                // []
+    caller                      // [caller]
+    address                     // [self, caller]
+    eq                          // [is_self]
+    is_self                     // [is_self_dest, is_self]
+    jumpi                       // []
+        THROW_AUTH()            // []
+    is_self:                    // []
+        0x08                    // [calldata_ptr]
+        calldataload            // [shard_word]
+        TO_ADDR()               // [shard]
+        0x04                    // [calldata_ptr, shard]
+        calldataload            // [selector_word, shard]
+        TO_B4()                 // [selector, shard]
+        dup2 dup2               // [selector, shard, selector, shard]
+        SHARD_SLOT(0x00, 0x20)  // [selector_slot, shard, selector, shard]
+        sstore                  // [selector, shard]
+        LOG_SHARD_SET()         // []
+        stop                    // []
 }
 
 /// ## Perform Syscall
@@ -263,7 +263,7 @@
 /// - When the delegate call fails.
 #define macro TRY_USE_SHARD() = takes (1) returns (0) {
     // takes:               // [selector]
-    SHARD_SLOT()            // [shard_slot]
+    SHARD_SLOT(0x00, 0x20)  // [shard_slot]
     sload                   // [shard]
     dup1                    // [shard, shard]
     iszero                  // [null_shard, shard]

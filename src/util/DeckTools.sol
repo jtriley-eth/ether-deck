@@ -4,6 +4,11 @@ pragma solidity ^0.8.19;
 /// @title Ether Deck Tooling
 /// @notice Pure utility functions for interfacing with the deck 
 library DeckTools {
+    error Auth();
+    error Threshold();
+    error Shard();
+    error Syscall();
+
     /// @notice Encodes a setAuth call
     /// @param account The account to set authorization for
     /// @param authorized Whether the account should be authorized

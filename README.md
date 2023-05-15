@@ -10,11 +10,9 @@ A gas optimized, extensible smart wallet.
 - create & test multi call shard
 - create & test flashloan shard
 - create & test pub storage shard
-- test for events
 - reduce `id` size
 - document all assumptions
 - document invariants
-- tests `id` increment
 
 ## Security Considerations
 
