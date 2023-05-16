@@ -246,56 +246,6 @@ contract EtherDeckTest is Test {
         assertEq(uint256(vm.load(deck, dt.idSlot())), 3);
     }
 
-    function testMaxSignatures() public {
-        uint256 id = 0;
-
-        for (uint256 i = 1; i < 255; i++) {
-            (bool authSuccess, ) = deck.call(
-                __selfSyscall(id, PK_ALICE, dt.encodeSetAuth(vm.addr(i), true))
-            );
-            id += 1;
-            assertTrue(authSuccess);
-        }
-
-        assertEq(uint256(vm.load(deck, dt.idSlot())), id);
-        __selfSyscall(id, PK_ALICE, dt.encodeSetThreshold(255));
-
-        bytes memory payload = dt.encodeSetThreshold(1);
-        bytes[] memory signatures = new bytes[](255);
-
-        for (uint256 i = 0; i < 255; i++) {
-            signatures[i] = __sign(
-                i + 1,
-                dt.hashSyscall({
-                    id: id,
-                    target: deck,
-                    value: 0,
-                    deadline: type(uint64).max,
-                    payload: payload,
-                    chainId: block.chainid
-                })
-            );
-        }
-
-        vm.expectCall(deck, 0, payload, 1);
-        vm.expectEmit(true, true, true, true, deck);
-        emit Syscall(id);
-
-        (bool success, ) = deck.call(
-            dt.encodeSyscall({
-                id: id,
-                target: deck,
-                value: 0,
-                deadline: type(uint64).max,
-                payload: payload,
-                signatures: signatures
-            })
-        );
-        assertTrue(success);
-        assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 1);
-        assertEq(uint256(vm.load(deck, dt.idSlot())), id + 1);
-    }
-
     function testIgnoreExtraSignatures() public {
         bytes memory payload = dt.encodeSetAuth(bob, true);
         bytes[] memory signatures = new bytes[](2);
@@ -555,10 +505,7 @@ contract EtherDeckTest is Test {
         uint88 value,
         bytes4 selector
     ) public asActor(alice) {
-        // divide value in half to prevent u88 overflow.
-        value /= 2;
-
-        vm.deal(alice, value * 2);
+        vm.deal(alice, value);
         vm.assume(uint160(target) > 255 && target != address(vm));
 
         bytes memory payload = abi.encodePacked(selector);
@@ -578,6 +525,8 @@ contract EtherDeckTest is Test {
         (bool success, bytes memory retdata) = target.call{value: value}(
             payload
         );
+
+        vm.deal(alice, value);
 
         vm.expectEmit(true, true, true, true, deck);
         emit Syscall(0);

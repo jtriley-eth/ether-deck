@@ -62,7 +62,7 @@
 ///
 /// Calldata Layout
 ///
-/// `id . target . value . deadline . payload . sigs`
+/// `id . target . value . deadline . payload_len . payload . (sig)*`
 ///
 /// | name        | size (bytes)   |
 /// | ----------- | -------------- |
@@ -70,8 +70,9 @@
 /// | target      | 20             |
 /// | value       | 11             |
 /// | deadline    | 8              |
-/// | payload     | n              |
-/// | sigs        | threshold * 96 |
+/// | payload_len | 4              |
+/// | payload     | payload_len    |
+/// | sig         |  65            |
 #define macro IS_SYSCALL() = takes (1) returns (1) {
     // takes:                   // [selector]
     [SYSCALL]                   // [syscall_selector, selector]

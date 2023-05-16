@@ -22,10 +22,10 @@ library DeckTools {
     }
 
     /// @notice Encodes a setShard call
-    /// @param shard The shard to set
-    /// @param account The account to set the shard for
-    function encodeSetShard(bytes4 shard, address account) internal pure returns (bytes memory) {
-        return abi.encodePacked(bytes4(0x00000003), shard, account);
+    /// @param selector The selector to dispatch the shard with
+    /// @param shard The shard to call
+    function encodeSetShard(bytes4 selector, address shard) internal pure returns (bytes memory) {
+        return abi.encodePacked(bytes4(0x00000003), selector, shard);
     }
 
     /// @notice Encodes a syscall
