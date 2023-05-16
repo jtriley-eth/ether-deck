@@ -1,0 +1,95 @@
+// -------------------------------------------------------------------------------------------------
+//! # Multicall Shard
+//!
+//! Stateful multicaller
+//!
+//! > WARNING: This may call arbitrary functions, including those on the main deck. A layer of
+//! > authentication is added, namely that the transaction must pass the deck's syscall checks,
+//! > but be mindful of what is sent to this shard.
+//!
+//! ## Encoding
+//!
+//! `selector . may_fail . calls_len . (target . value . payload_len . payload)+`
+//!
+//! | name        | size (bytes) |
+//! | ----------- | ------------ |
+//! | selector    | 4            |
+//! | may_fail    | 1            |
+//! | calls_len   | 4            |
+//! | target      | 20           |
+//! | value       | 11           |
+//! | payload_len | 4            |
+//! | payload     | payload_len  |
+
+#include "../lib/libcast.huff"
+#include "../lib/liberr.huff"
+
+/// ## Function signature
+#define function multicall() nonpayable returns ()
+
+/// ## Entry Point
+#define macro MAIN() = takes (0) returns (0) {
+    caller                  // [caller]
+    address                 // [self, caller]
+    eq                      // [is_self]
+    is_self                 // [is_self_dest, is_self]
+    jumpi                   // []
+        THROW_AUTH()        // []
+    is_self:                // []
+        0x05                // [calldata_ptr]
+        calldataload        // [calls_len_word]
+        TO_U32()            // [calls_len]
+        0x09                // [call_ptr, calls_len]
+        0x01                // [all_success, call_ptr, calls_len]
+        loop_start:         // [all_success, call_ptr, calls_len]
+            dup2            // [call_ptr, all_success, call_ptr, calls_len]
+            0x1f            // [payload_len_offset, call_ptr, all_success, call_ptr, calls_len]
+            add             // [payload_len_ptr, all_success, call_ptr, calls_len]
+            calldataload    // [payload_len_word, all_success, call_ptr, calls_len]
+            TO_U32()        // [payload_len, all_success, call_ptr, calls_len]
+            0x00 0x00       // [ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            dup3            // [payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            0x00            // [mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            dup7            // [call_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+
+            0x23            // [payload_offset, call_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            add             // [payload_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            dup3            // [payload_len, payload_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            swap1           // [payload_ptr, payload_len, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            0x00            // [mem_ptr, payload_ptr, payload_len, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            calldatacopy    // [mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+
+            dup7            // [call_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            0x14            // [value_offset, call_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            add             // [value_ptr, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            calldataload    // [value_word, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            TO_U88()        // [value, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            dup8            // [call_ptr, value, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            calldataload    // [target_word, value, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            TO_ADDR()       // [target, value, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            gas             // [gas, target, value, mem_ptr, payload_len, ret_ptr, ret_len, payload_len, all_success, call_ptr, calls_len]
+            call            // [success, payload_len, all_success, call_ptr, calls_len]
+
+            swap1           // [payload_len, success, all_success, call_ptr, calls_len]
+            0x23            // [nonpayload_len, payload_len, success, all_success, call_ptr, calls_len]
+            add             // [call_len, success, all_success, call_ptr, calls_len]
+            swap2           // [all_success, success, call_len, call_ptr, calls_len]
+            and             // [all_success, call_len, call_ptr, calls_len]
+            swap2           // [call_ptr, call_len, all_success, calls_len]
+            add             // [new_call_ptr, all_success, calls_len]
+            swap1           // [all_success, new_call_ptr, calls_len]
+            dup3 dup3       // [new_call_ptr, calls_len, all_success, new_call_ptr, calls_len]
+            lt              // [not_last_call, all_success, new_call_ptr, calls_len]
+            loop_start      // [loop_start_dest, not_last_call, all_success, new_call_ptr, calls_len]
+            jumpi           // [all_success, new_call_ptr, calls_len]
+        0x04                // [calldata_ptr, all_success, new_call_ptr, calls_len]
+        calldataload        // [may_fail_word, all_success, new_call_ptr, calls_len]
+        TO_U8()             // [may_fail, all_success, new_call_ptr, calls_len]
+        or                  // [is_ok, new_call_ptr]
+        is_ok               // [is_ok_dest, is_ok, new_call_ptr, calls_len]
+        jumpi               // [new_call_ptr, calls_len]
+            0x00 0x00       // [ret_ptr, ret_len, new_call_ptr, calls_len]
+            revert          // []
+        is_ok:              // [new_call_ptr, calls_len]
+            stop            // []
+}
