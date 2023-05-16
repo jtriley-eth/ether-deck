@@ -38,8 +38,9 @@ contract ScanShard is Script {
     }
 }
 
-enum Op {
-    // NOOP
+enum Op
+// NOOP
+{
     NOOP,
     // TERMINAL
     STOP,
@@ -132,34 +133,40 @@ function newScannerState(bytes memory bytecode) pure returns (ScannerState memor
 function watDo(ScannerState memory state) pure returns (string memory) {
     string memory report = "\n";
     if (state.hasSelfdestruct) {
-        report = string.concat(report,"[!] SELFDESTRUCT: May destroy the deck and send its funds to any address.\n");
+        report = string.concat(report, "[!] SELFDESTRUCT: May destroy the deck and send its funds to any address.\n");
     }
     if (state.hasDelegatecall) {
-        report = string.concat(report,"[!] DELEGATECALL: May make an external call that can read or write the deck's storage.\n");
+        report = string.concat(
+            report, "[!] DELEGATECALL: May make an external call that can read or write the deck's storage.\n"
+        );
     }
     if (state.hasCallcode) {
-        report = string.concat(report,"[!] CALLCODE: May make an external call that can read or write the deck's storage.\n");
+        report = string.concat(
+            report, "[!] CALLCODE: May make an external call that can read or write the deck's storage.\n"
+        );
     }
     if (state.hasCall) {
-        report = string.concat(report,"[!] CALL: May make an external call, including to the deck itself.\n");
+        report = string.concat(report, "[!] CALL: May make an external call, including to the deck itself.\n");
     }
     if (state.hasSstore) {
-        report = string.concat(report,"[!] SSTORE: May write to the deck's local storage.\n");
+        report = string.concat(report, "[!] SSTORE: May write to the deck's local storage.\n");
     }
     if (state.hasCreate) {
-        report = string.concat(report,"[!] CREATE: May create an external contract that can execute arbitrary code.\n");
+        report = string.concat(report, "[!] CREATE: May create an external contract that can execute arbitrary code.\n");
     }
     if (state.hasCreate2) {
-        report = string.concat(report,"[!] CREATE2: May create an external contract that can execute arbitrary code.\n");
+        report =
+            string.concat(report, "[!] CREATE2: May create an external contract that can execute arbitrary code.\n");
     }
     if (state.hasLogn) {
-        report = string.concat(report,"[!] LOGN: May write to the deck's event log.\n");
+        report = string.concat(report, "[!] LOGN: May write to the deck's event log.\n");
     }
     if (state.hasSload) {
         report = string.concat(report, "[.] SLOAD: May read from the deck's storage.\n");
     }
     if (state.hasStaticcall) {
-        report = string.concat(report,"[.] STATICCALL: May make an external read-only call. EVM disallows state changes.\n");
+        report =
+            string.concat(report, "[.] STATICCALL: May make an external read-only call. EVM disallows state changes.\n");
     }
     return report;
 }

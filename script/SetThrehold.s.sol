@@ -19,22 +19,13 @@ contract SetThresholdScript is Script {
         uint256 pk = vm.envUint("PRIVATE_KEY");
 
         bytes memory payload = dt.encodeSetThreshold(threshold);
-        bytes32 hash = dt.hashSyscall(
-            id,
-            deck,
-            0,
-            deadline,
-            payload,
-            block.chainid
-        );
+        bytes32 hash = dt.hashSyscall(id, deck, 0, deadline, payload, block.chainid);
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, hash);
         bytes[] memory sigs = new bytes[](1);
         sigs[0] = abi.encodePacked(v, r, s);
 
-        (bool success, ) = deck.call(
-            dt.encodeSyscall(id, deck, 0, deadline, payload, sigs)
-        );
+        (bool success,) = deck.call(dt.encodeSyscall(id, deck, 0, deadline, payload, sigs));
 
         require(success);
 
