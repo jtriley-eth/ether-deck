@@ -4,20 +4,30 @@ A gas optimized, extensible smart wallet.
 
 ```mermaid
 flowchart LR
-    deck{deck}
+    s0[signer 0]
+    s1[signer 1]
+    s2[signer 2]
+    sc(syscall)
+    deck{etherdeck}
     mcs[multicall shard]
     fls[flash loan shard]
-    pss[public storage shard]
-    recv[token receiver shard]
-    e0[target 0]
-    e1[target 1]
+    pss([public storage shard])
+    recv([token receiver shard])
+    e0([target 0])
+    e1([target 1])
+    p0([flash pool])
 
+    s0 --> sc
+    s1 --> sc
+    s2 --> sc
+    sc --> deck
     deck --> recv
     deck --> mcs
     deck --> pss
     deck --> fls
     mcs --> e0
     mcs --> e1
+    fls --> p0
 ```
 
 ## Security Considerations
