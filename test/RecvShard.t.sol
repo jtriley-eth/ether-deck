@@ -21,24 +21,11 @@ contract RecvShardTest is Test {
     }
 
     function testERC1155() public {
-        erc1155.callOnERC1155Received(
-            shard,
-            address(1),
-            address(1),
-            1,
-            1,
-            bytes("1")
-        );
+        erc1155.callOnERC1155Received(shard, address(1), address(1), 1, 1, bytes("1"));
     }
 
     function testERC721() public {
-        erc721.callOnERC721Received(
-            shard,
-            address(1),
-            address(1),
-            1,
-            bytes("1")
-        );
+        erc721.callOnERC721Received(shard, address(1), address(1), 1, bytes("1"));
     }
 
     function testFuzzReturnSelector(bytes4 selector) public {

@@ -2,13 +2,9 @@
 pragma solidity ^0.8.19;
 
 interface IERC1155Receiver {
-    function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes memory data
-    ) external returns (bytes4);
+    function onERC1155Received(address operator, address from, uint256 id, uint256 value, bytes memory data)
+        external
+        returns (bytes4);
 
     function onERC1155BatchReceived(
         address operator,
@@ -31,13 +27,8 @@ contract MockERC1155 {
         bytes memory data
     ) public {
         if (
-            IERC1155Receiver(target).onERC1155Received(
-                operator,
-                from,
-                id,
-                value,
-                data
-            ) != IERC1155Receiver.onERC1155Received.selector
+            IERC1155Receiver(target).onERC1155Received(operator, from, id, value, data)
+                != IERC1155Receiver.onERC1155Received.selector
         ) revert CallbackFailed();
     }
 
@@ -50,13 +41,8 @@ contract MockERC1155 {
         bytes memory data
     ) public {
         if (
-            IERC1155Receiver(target).onERC1155BatchReceived(
-                operator,
-                from,
-                ids,
-                values,
-                data
-            ) != IERC1155Receiver.onERC1155BatchReceived.selector
+            IERC1155Receiver(target).onERC1155BatchReceived(operator, from, ids, values, data)
+                != IERC1155Receiver.onERC1155BatchReceived.selector
         ) revert CallbackFailed();
     }
 }

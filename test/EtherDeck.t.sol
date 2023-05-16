@@ -10,8 +10,7 @@ using {compile} for Vm;
 using {create} for bytes;
 
 contract EtherDeckTest is Test {
-    uint256 constant SECP256K1_ORDER =
-        115792089237316195423570985008687907852837564279074904382605163141518161494337;
+    uint256 constant SECP256K1_ORDER = 115792089237316195423570985008687907852837564279074904382605163141518161494337;
 
     uint256 constant PK_ALICE = 1;
     uint256 constant PK_BOB = 2;
@@ -53,9 +52,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit AuthSet(bob, true);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true)));
 
         assertTrue(success);
         assertEq(__toBool(vm.load(deck, dt.authSlot(bob))), true);
@@ -67,9 +64,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit AuthSet(bob, true);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true)));
 
         assertTrue(success);
         assertEq(__toBool(vm.load(deck, dt.authSlot(bob))), true);
@@ -79,9 +74,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit AuthSet(bob, false);
 
-        (success, ) = deck.call(
-            __selfSyscall(1, PK_ALICE, dt.encodeSetAuth(bob, false))
-        );
+        (success,) = deck.call(__selfSyscall(1, PK_ALICE, dt.encodeSetAuth(bob, false)));
 
         assertTrue(success);
         assertEq(__toBool(vm.load(deck, dt.authSlot(bob))), false);
@@ -93,9 +86,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ThresholdSet(2);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetThreshold(2))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetThreshold(2)));
 
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 2);
@@ -110,9 +101,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ShardSet(selector, shard);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard)));
 
         assertTrue(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), shard);
@@ -127,9 +116,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ShardSet(selector, shard);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard)));
 
         assertTrue(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), shard);
@@ -139,9 +126,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ShardSet(selector, address(0));
 
-        (success, ) = deck.call(
-            __selfSyscall(1, PK_ALICE, dt.encodeSetShard(selector, address(0)))
-        );
+        (success,) = deck.call(__selfSyscall(1, PK_ALICE, dt.encodeSetShard(selector, address(0))));
 
         assertTrue(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), address(0));
@@ -184,16 +169,12 @@ contract EtherDeckTest is Test {
     }
 
     function testTwoSignatures() public {
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true)));
         assertTrue(success);
         assertTrue(__toBool(vm.load(deck, dt.authSlot(bob))));
         assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
 
-        (success, ) = deck.call(
-            __selfSyscall(1, PK_ALICE, dt.encodeSetThreshold(2))
-        );
+        (success,) = deck.call(__selfSyscall(1, PK_ALICE, dt.encodeSetThreshold(2)));
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 2);
         assertEq(uint256(vm.load(deck, dt.idSlot())), 2);
@@ -231,7 +212,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit Syscall(2);
 
-        (success, ) = deck.call(
+        (success,) = deck.call(
             dt.encodeSyscall({
                 id: 2,
                 target: deck,
@@ -276,7 +257,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit Syscall(0);
 
-        (bool success, ) = deck.call(
+        (bool success,) = deck.call(
             dt.encodeSyscall({
                 id: 0,
                 target: deck,
@@ -293,13 +274,8 @@ contract EtherDeckTest is Test {
     }
 
     function testUseShard() public {
-        (bool success, ) = deck.call(
-            __selfSyscall(
-                0,
-                PK_ALICE,
-                dt.encodeSetShard(MockTarget.succeeds.selector, mockTarget)
-            )
-        );
+        (bool success,) =
+            deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetShard(MockTarget.succeeds.selector, mockTarget)));
 
         assertTrue(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(MockTarget.succeeds.selector))), mockTarget);
@@ -313,9 +289,7 @@ contract EtherDeckTest is Test {
     // Failure Cases
 
     function testUnauthorizedSigner() public {
-        (bool success, bytes memory retdata) = deck.call(
-            __selfSyscall(0, PK_BOB, dt.encodeSetAuth(bob, true))
-        );
+        (bool success, bytes memory retdata) = deck.call(__selfSyscall(0, PK_BOB, dt.encodeSetAuth(bob, true)));
 
         assertFalse(success);
         assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
@@ -413,9 +387,7 @@ contract EtherDeckTest is Test {
     }
 
     function testSetAuthExternal() public asActor(alice) {
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetAuth(bob, true)
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetAuth(bob, true));
 
         assertFalse(success);
         assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
@@ -424,9 +396,7 @@ contract EtherDeckTest is Test {
     }
 
     function testSetThresholdExternal() public asActor(alice) {
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetThreshold(2)
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetThreshold(2));
 
         assertFalse(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 1);
@@ -434,9 +404,7 @@ contract EtherDeckTest is Test {
     }
 
     function testSetShardExternal() public asActor(alice) {
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetShard(0xaabbccdd, address(1))
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetShard(0xaabbccdd, address(1)));
 
         assertFalse(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(0xaabbccdd))), address(0));
@@ -444,9 +412,8 @@ contract EtherDeckTest is Test {
     }
 
     function testUseShardRevert() public {
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetShard(MockTarget.fails.selector, mockTarget))
-        );
+        (bool success,) =
+            deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetShard(MockTarget.fails.selector, mockTarget)));
 
         assertTrue(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(MockTarget.fails.selector))), mockTarget);
@@ -463,9 +430,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit AuthSet(account, auth);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(account, auth))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(account, auth)));
 
         assertTrue(success);
         assertTrue(__toBool(vm.load(deck, dt.authSlot(account))) == auth);
@@ -477,9 +442,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ThresholdSet(threshold);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetThreshold(threshold))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetThreshold(threshold)));
 
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), threshold);
@@ -490,9 +453,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit ShardSet(selector, shard);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetShard(selector, shard)));
 
         assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
         assertTrue(success);
@@ -500,11 +461,7 @@ contract EtherDeckTest is Test {
         assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
     }
 
-    function testFuzzSyscall(
-        address target,
-        uint88 value,
-        bytes4 selector
-    ) public asActor(alice) {
+    function testFuzzSyscall(address target, uint88 value, bytes4 selector) public asActor(alice) {
         vm.deal(alice, value);
         vm.assume(uint160(target) > 255 && target != address(vm));
 
@@ -522,9 +479,7 @@ contract EtherDeckTest is Test {
             })
         );
 
-        (bool success, bytes memory retdata) = target.call{value: value}(
-            payload
-        );
+        (bool success, bytes memory retdata) = target.call{value: value}(payload);
 
         vm.deal(alice, value);
 
@@ -554,9 +509,7 @@ contract EtherDeckTest is Test {
         vm.expectEmit(true, true, true, true, deck);
         emit AuthSet(bob, true);
 
-        (bool success, ) = deck.call(
-            __selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true))
-        );
+        (bool success,) = deck.call(__selfSyscall(0, PK_ALICE, dt.encodeSetAuth(bob, true)));
         assertTrue(success);
         assertEq(uint256(vm.load(deck, dt.idSlot())), 1);
     }
@@ -568,9 +521,7 @@ contract EtherDeckTest is Test {
         vm.assume(pk != PK_ALICE);
         address attacker = vm.addr(pk);
 
-        (bool success, bytes memory retdata) = deck.call(
-            __selfSyscall(0, pk, dt.encodeSetAuth(attacker, true))
-        );
+        (bool success, bytes memory retdata) = deck.call(__selfSyscall(0, pk, dt.encodeSetAuth(attacker, true)));
 
         assertFalse(success);
         assertFalse(__toBool(vm.load(deck, dt.authSlot(attacker))));
@@ -618,7 +569,7 @@ contract EtherDeckTest is Test {
 
         vm.chainId(chainId);
 
-        (bool success, ) = deck.call(
+        (bool success,) = deck.call(
             dt.encodeSyscall({
                 id: 0,
                 target: deck,
@@ -639,14 +590,7 @@ contract EtherDeckTest is Test {
         bytes[] memory signatures = new bytes[](1);
         signatures[0] = __sign(
             PK_ALICE,
-            dt.hashSyscall({
-                id: 0,
-                target: deck,
-                value: 0,
-                deadline: deadline,
-                payload: payload,
-                chainId: block.chainid
-            })
+            dt.hashSyscall({id: 0, target: deck, value: 0, deadline: deadline, payload: payload, chainId: block.chainid})
         );
 
         vm.warp(minedAt);
@@ -677,9 +621,7 @@ contract EtherDeckTest is Test {
     function testFuzzSetAuthExternal(address actor) public asActor(actor) {
         vm.assume(actor != deck);
 
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetAuth(bob, true)
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetAuth(bob, true));
 
         assertFalse(success);
         assertFalse(__toBool(vm.load(deck, dt.authSlot(bob))));
@@ -690,38 +632,27 @@ contract EtherDeckTest is Test {
     function testFuzzSetThresholdExternal(address actor) public asActor(actor) {
         vm.assume(actor != deck);
 
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetThreshold(2)
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetThreshold(2));
 
         assertFalse(success);
         assertEq(uint256(vm.load(deck, dt.thresholdSlot())), 1);
         assertEq(bytes4(retdata), dt.Auth.selector);
     }
 
-    function testFuzzSetShardExternal(
-        address actor,
-        bytes4 selector,
-        address shard
-    ) public asActor(actor) {
+    function testFuzzSetShardExternal(address actor, bytes4 selector, address shard) public asActor(actor) {
         vm.assume(actor != deck);
 
-        (bool success, bytes memory retdata) = deck.call(
-            dt.encodeSetShard(selector, shard)
-        );
+        (bool success, bytes memory retdata) = deck.call(dt.encodeSetShard(selector, shard));
 
         assertFalse(success);
         assertEq(__toAddr(vm.load(deck, dt.shardSlot(selector))), address(0));
         assertEq(bytes4(retdata), dt.Auth.selector);
     }
 
-    function testFuzzCalldata(
-        address actor,
-        bytes memory payload
-    ) public asActor(actor) {
+    function testFuzzCalldata(address actor, bytes memory payload) public asActor(actor) {
         vm.assume(actor != deck);
 
-        (bool success, ) = deck.call(payload);
+        (bool success,) = deck.call(payload);
 
         assertFalse(success);
         assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
@@ -730,11 +661,7 @@ contract EtherDeckTest is Test {
     // ---------------------------------------------------------------------------------------------
     // Internals
 
-    function __selfSyscall(
-        uint256 id,
-        uint256 pk,
-        bytes memory payload
-    ) internal view returns (bytes memory) {
+    function __selfSyscall(uint256 id, uint256 pk, bytes memory payload) internal view returns (bytes memory) {
         bytes[] memory signatures = new bytes[](1);
         signatures[0] = __sign(
             pk,
@@ -747,21 +674,17 @@ contract EtherDeckTest is Test {
                 chainId: block.chainid
             })
         );
-        return
-            dt.encodeSyscall({
-                id: id,
-                target: deck,
-                value: 0,
-                deadline: type(uint64).max,
-                payload: payload,
-                signatures: signatures
-            });
+        return dt.encodeSyscall({
+            id: id,
+            target: deck,
+            value: 0,
+            deadline: type(uint64).max,
+            payload: payload,
+            signatures: signatures
+        });
     }
 
-    function __sign(
-        uint256 pk,
-        bytes32 hash
-    ) internal pure returns (bytes memory) {
+    function __sign(uint256 pk, bytes32 hash) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, hash);
         return abi.encodePacked(v, r, s);
     }

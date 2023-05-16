@@ -26,196 +26,132 @@ contract MulticallShardTest is Test {
         mockTarget = address(new MockTarget());
     }
 
-    function testSingle() public asDeck() {
+    function testSingle() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.succeeds, (42));
         mst.Call[] memory calls = new mst.Call[](1);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
 
         vm.expectCall(mockTarget, 0, payload, 1);
-        (bool success, ) = shard.call(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testSingleWithValue() public asDeck() {
+    function testSingleWithValue() public asDeck {
         vm.deal(shard, 42);
 
         bytes memory payload = abi.encodeCall(MockTarget.succeeds, (42));
         mst.Call[] memory calls = new mst.Call[](1);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 42,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 42, payload: payload});
 
         vm.expectCall(mockTarget, 42, payload, 1);
-        (bool success, ) = shard.call{value: 42}(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call{value: 42}(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testTwo() public asDeck() {
+    function testTwo() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.succeeds, (42));
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 0, payload: payload});
 
         vm.expectCall(mockTarget, 0, payload, 2);
-        (bool success, ) = shard.call(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testTwoWithValue() public asDeck() {
+    function testTwoWithValue() public asDeck {
         vm.deal(shard, 42 * 2);
 
         bytes memory payload = abi.encodeCall(MockTarget.succeeds, (42));
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 42,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 42,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 42, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 42, payload: payload});
 
         vm.expectCall(mockTarget, 42, payload, 2);
-        (bool success, ) = shard.call{value: 42 * 2}(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call{value: 42 * 2}(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testTwoMayFail() public asDeck() {
+    function testTwoMayFail() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.fails, ());
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 0, payload: payload});
 
         vm.expectCall(mockTarget, 0, payload, 2);
-        (bool success, ) = shard.call(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testTwoMayNotFail() public asDeck() {
+    function testTwoMayNotFail() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.fails, ());
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 0, payload: payload});
 
-        (bool success, ) = shard.call(mst.encodeCalls(false, calls));
+        (bool success,) = shard.call(mst.encodeCalls(false, calls));
 
         assertFalse(success);
     }
 
-    function testOneFailsOneSucceedsMayFail() public asDeck() {
+    function testOneFailsOneSucceedsMayFail() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.fails, ());
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: abi.encodeCall(MockTarget.succeeds, (42))
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 0, payload: abi.encodeCall(MockTarget.succeeds, (42))});
 
-        (bool success, ) = shard.call(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
 
-    function testOneFailsOneSucceedsMayNotFail() public asDeck() {
+    function testOneFailsOneSucceedsMayNotFail() public asDeck {
         bytes memory payload = abi.encodeCall(MockTarget.fails, ());
         mst.Call[] memory calls = new mst.Call[](2);
-        calls[0] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: payload
-        });
-        calls[1] = mst.Call({
-            target: mockTarget,
-            value: 0,
-            payload: abi.encodeCall(MockTarget.succeeds, (42))
-        });
+        calls[0] = mst.Call({target: mockTarget, value: 0, payload: payload});
+        calls[1] = mst.Call({target: mockTarget, value: 0, payload: abi.encodeCall(MockTarget.succeeds, (42))});
 
-        (bool success, ) = shard.call(mst.encodeCalls(false, calls));
+        (bool success,) = shard.call(mst.encodeCalls(false, calls));
 
         assertFalse(success);
     }
 
-    function testFuzzSingle(address target, bytes4 selector, uint88 value) public asDeck() {
+    function testFuzzSingle(address target, bytes4 selector, uint88 value) public asDeck {
         vm.assume(uint160(target) > 255);
         vm.deal(shard, value);
         bytes memory payload = abi.encodePacked(selector);
         mst.Call[] memory calls = new mst.Call[](1);
-        calls[0] = mst.Call({
-            target: target,
-            value: value,
-            payload: payload
-        });
+        calls[0] = mst.Call({target: target, value: value, payload: payload});
 
         (bool vibeCheck,) = target.call{value: value}(payload);
         if (vibeCheck) vm.expectCall(target, value, payload, 1);
 
         vm.deal(shard, value);
 
-        (bool success, ) = shard.call{value: value}(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call{value: value}(mst.encodeCalls(true, calls));
         assertTrue(success);
     }
 
-    function testFuzzMulti(address target, bytes4 selector, uint8 value, uint8 iterations) public asDeck() {
+    function testFuzzMulti(address target, bytes4 selector, uint8 value, uint8 iterations) public asDeck {
         vm.assume(uint160(target) > 255);
         uint88 totalValue = uint88(value) * uint88(iterations);
         vm.deal(shard, totalValue);
         bytes memory payload = abi.encodePacked(selector);
         mst.Call[] memory calls = new mst.Call[](iterations);
         for (uint8 i = 0; i < iterations; i++) {
-            calls[i] = mst.Call({
-                target: target,
-                value: value,
-                payload: payload
-            });
+            calls[i] = mst.Call({target: target, value: value, payload: payload});
         }
 
         (bool vibeCheck,) = target.call{value: totalValue}(payload);
         if (vibeCheck) vm.expectCall(target, value, payload, iterations);
 
         vm.deal(shard, totalValue);
-        (bool success, ) = shard.call{value: totalValue}(mst.encodeCalls(true, calls));
+        (bool success,) = shard.call{value: totalValue}(mst.encodeCalls(true, calls));
 
         assertTrue(success);
     }
