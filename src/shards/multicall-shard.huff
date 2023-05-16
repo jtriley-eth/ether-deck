@@ -1,0 +1,15 @@
+// -------------------------------------------------------------------------------------------------
+//! # Multicall Shard
+//!
+//! Stateful multicaller
+//!
+//! > WARNING: This may call arbitrary functions, including those on the main deck. A layer of
+//! > authentication is added, namely that the transaction must pass the deck's syscall checks,
+//! > but be mindful of what is sent to this shard.
+
+/// Function signature
+#define function multicall(bytes memory data) nonpayable returns ()
+
+#define macro MAIN() = takes (0) returns (0) {
+    
+}

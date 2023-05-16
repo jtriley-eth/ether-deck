@@ -6,8 +6,6 @@ pragma solidity ^0.8.19;
 library DeckTools {
     error Auth();
     error Deadline();
-    error Threshold();
-    error Shard();
     error Syscall();
 
     /// @notice Encodes a setAuth call

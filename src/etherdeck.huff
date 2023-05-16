@@ -263,6 +263,8 @@
 /// - When the delegate call fails.
 #define macro TRY_USE_SHARD() = takes (1) returns (0) {
     // takes:               // [selector]
+    0xe0                    // [shift, selector]
+    shl                     // [selector_b4]
     SHARD_SLOT(0x00, 0x20)  // [shard_slot]
     sload                   // [shard]
     dup1                    // [shard, shard]

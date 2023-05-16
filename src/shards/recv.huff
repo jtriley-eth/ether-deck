@@ -1,13 +1,13 @@
 // -------------------------------------------------------------------------------------------------
 //! # Recv Shard
 //!
-//! ERC721 and ERC1155 Token Receiver
+//! Stateless ERC721 and ERC1155 Token Receiver
 
-/// ## Entry Point to Receiver
+/// ## Entry Point
 ///
 /// ### Directives
 ///
-/// 1. Copy the selecto from calldata to memory
+/// 1. Copy the selector from calldata to memory.
 /// 2. Return the selector from memory.
 ///
 /// ### Accommodates
@@ -17,10 +17,10 @@
 /// - `onERC1155BatchReceived`
 #define macro MAIN() = takes (0) returns (0) {
     0x04            // [selector_len]
-    dup1            // [selector_len, selector_len]
-    0x00            // [calldata_ptr, selector_len, selector_len]
-    0x00            // [mem_ptr, calldata_ptr, selector_len, selector_len]
-    calldatacopy    // [selector_len]
-    0x00            // [mem_ptr, selector_len]
+    0x00            // [calldata_ptr, selector_len]
+    0x00            // [mem_ptr, calldata_ptr, selector_len]
+    calldatacopy    // []
+    msize           // [mem_len]
+    0x00            // [mem_ptr, mem_len]
     return          // []
 }

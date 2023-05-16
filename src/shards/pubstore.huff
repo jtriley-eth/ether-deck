@@ -1,0 +1,26 @@
+// -------------------------------------------------------------------------------------------------
+//! # Public Storage Shard
+//!
+//! Read-only Storage Reader
+
+/// Function Signature
+#define function storageLoad(bytes32 key) view returns (bytes32)
+
+/// ## Entry Point
+///
+/// ### Directives
+///
+/// 1. Load storage slot from calldata.
+/// 2. Load the value with the slot.
+/// 3. Store the value in memory.
+/// 4. Return the value from memory.
+#define macro MAIN() = takes (0) returns (0) {
+    0x04            // [calldata_ptr]
+    calldataload    // [key]
+    sload           // [value]
+    0x00            // [mem_ptr, value]
+    mstore          // []
+    msize           // [mem_len]
+    0x00            // [mem_ptr, mem_len]
+    return          // []
+}

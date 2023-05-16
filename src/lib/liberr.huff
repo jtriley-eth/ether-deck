@@ -6,9 +6,6 @@
 /// Authentication Error.
 #define error Auth()
 
-/// Insufficient Threshold Error.
-#define error Threshold()
-
 /// Deadline Exceeded Error.
 #define error Deadline()
 
@@ -23,16 +20,6 @@
     0x04            // [mem_len]
     0x00            // [mem_ptr, mem_len]
     revert          // []
-}
-
-/// ## Throw Threshold Error
-#define macro THROW_THRESH() = takes (0) returns (0) {
-    __ERROR(Threshold)  // [thresh_err]
-    0x00                // [mem_ptr, thresh_err]
-    mstore              // []
-    0x04                // [mem_len]
-    0x00                // [mem_ptr, mem_len]
-    revert              // []
 }
 
 /// ## Throw Deadline Error
