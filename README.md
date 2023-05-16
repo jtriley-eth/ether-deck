@@ -2,17 +2,29 @@
 
 A gas optimized, extensible smart wallet.
 
-## TODO
+```mermaid
+flowchart LR
+    deck{deck}
+    mcs[multicall shard]
+    fls[flash loan shard]
+    pss[public storage shard]
+    recv[token receiver shard]
+    e0[target 0]
+    e1[target 1]
 
-- test token receiver shard
-- create & test multi call shard
-- create & test flashloan shard
-- create & test pub storage shard
-- document all assumptions
-- document invariants
-- check error codes in failures
+    deck --> recv
+    deck --> mcs
+    deck --> pss
+    deck --> fls
+    mcs --> e0
+    mcs --> e1
+```
 
 ## Security Considerations
+
+> IMPORTANT: read this. do not self rug.
+
+### Shards
 
 Shards are code fragments that may be delegated to if no function selector is matched. This allows
 for arbitrary extensions of executable code, token receiver callback integration, and
@@ -26,6 +38,17 @@ The built-in selectors are reserved for the built-in functions and setting the s
 any of them will *not* take precedence over the built-ins. That is to say, shard selectors that
 match the built-in selectors will never be delegatecalled to.
 
+When creating new shards, it is important to note that if a requirement that the caller is not the
+current address, it will bypass the authorization checks and may be called by anyone. Therefore,
+only stateless and read-only shards may omit authorization checks safely. Otherwise, stateful or
+externally calling shards should implement the equivalent of the following.
+
+```solidity
+require(msg.sender == address(this));
+```
+
+### Syscalls
+
 The `syscall` function, which verifies signatures in a loop, assumes the length of the signature
 array is equal to the current threshold. This means if the number of signatures is less than the
 threshold, the call fails. However, since the signatures are appended to the end of the calldata, if
@@ -38,6 +61,37 @@ is false, the transaction will revert. This satisfies the following invariants.
 1. Any `ecrecover` operation that resolves to the zero address reverts.
 2. Any duplicate signer in the signature list reverts.
 3. Signature malleability reverts.
+
+### Invariants
+
+- the authorization, threshold, and shards may only be set via a self-call
+  - through a syscall
+  - through a shard
+- selectors mapping to null shards will never trigger an external call
+- forks with different chain ids may will not enable chain-id based replay attacks
+- signatures with no recovery address will throw
+- signatures with an unauthorized recovery address will throw
+- signature list length less than the threshold will throw
+- signatures in the signature list beyond the threshold will be ignored
+- signatures with duplicate addresses in the list will throw
+  - replay attacks will throw
+  - signature malleability will throw
+  - multiple signatures from the same private key will throw
+
+### Assumptions
+
+- syscall call value will not exceed `2 ** 88 - 1`
+- syscall payload length, in bytes, will not exceed `2 ** 32 - 1`
+- syscall payload length is correct
+- syscall calldata is packed tightly according to the [abi specification](src/lib/libabi.huff)
+- syscall signatures are packed tightly as `v_u8 . r_b32 . s_b32`
+- syscall signatures list has a length equal to the current threshold
+- syscall signatures are sorted in ascending order of signer's address
+- signers that authorize a shard are aware of its storage interactions
+- signers that authorize a shard are aware of its external call interactions
+- signers that authorize a shard are aware of its invariants
+- signers will not set shard selectors to be one of the reserved selectors
+- block timestamp will not exceed `2 ** 64 - 1`
 
 ## Application Binary Interface
 
@@ -54,6 +108,12 @@ is false, the transaction will revert. This satisfies the following invariants.
 - `ThresholdSet(uint8 indexed threshold)`
 - `ShardSet(bytes4 indexed selector, address indexed target)`
 - `Syscall(uint256 indexed id)`
+
+### Errors
+
+- `Auth()` : authorization failure
+- `Deadline()` : deadline less than current block timestamp
+- `Dispatch()` : function selector was not matched to a built-in or shard
 
 ## Storage Layout
 
@@ -85,3 +145,21 @@ flowchart
     shs -->|3| sel0[selector 0] -->|"sha3(selector, 3)"| sh0[shard 0]
     shs -->|3| sel1[selector 1] -->|"sha3(selector, 3)"| sh1[shard 1]
 ```
+
+## Tooling
+
+The list of tooling and libraries is limited at the moment.
+
+- [Deck Tools (Solidity)](src/util/DeckTools.sol): unoptimized, used for tests
+- [Multicall Shard Tools (Solidity)](src/util/MulticallShardTools.sol): unoptimized, used for tests
+- [ABI Library (Huff)](src/lib/libabi.huff): minimal abi spec and layout docs
+- [Type Casting Library (Huff)](src/lib/libcast.huff): only contains relevant types atm
+- [ECDSA Library (Huff)](src/lib/libecdsa.huff): elliptic curve moon maths
+- [Error Library (Huff)](src/lib/liberr.huff): error handling
+- [Storage Library (Huff)](src/lib/libstore.huff): storage layout and computation
+
+### Shards
+
+- [Multicall (Huff)](src/shards/multicall.huff): Optimized multicall, contiains auth check
+- [Public Storage (Huff)](src/shards/pubstore.huff): Public storage reader, read-only
+- [Recv (Huff)](src/shards/recv.huff): ERC721Receiver and ERC1155Receiver compliant, stateless
