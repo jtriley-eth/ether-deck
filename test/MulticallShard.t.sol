@@ -13,6 +13,8 @@ contract MulticallShardTest is Test {
     address shard;
     address mockTarget;
 
+    address constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+
     // since the multicaller requires that `msg.sender == address(this)`, we treat the caller as the
     // shard address. this is fine because the deck will delegatecall to this code in production.
     modifier asDeck() {
@@ -138,7 +140,7 @@ contract MulticallShardTest is Test {
     }
 
     function testFuzzMulti(address target, bytes4 selector, uint8 value, uint8 iterations) public asDeck {
-        vm.assume(uint160(target) > 255);
+        vm.assume(uint160(target) > 255 && target != CREATE2_DEPLOYER);
         uint88 totalValue = uint88(value) * uint88(iterations);
         vm.deal(shard, totalValue);
         bytes memory payload = abi.encodePacked(selector);
@@ -149,6 +151,7 @@ contract MulticallShardTest is Test {
 
         (bool vibeCheck,) = target.call{value: totalValue}(payload);
         if (vibeCheck) vm.expectCall(target, value, payload, iterations);
+        else console.log(target);
 
         vm.deal(shard, totalValue);
         (bool success,) = shard.call{value: totalValue}(mst.encodeCalls(true, calls));
