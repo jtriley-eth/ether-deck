@@ -6,7 +6,7 @@ import "lib/forge-std/src/Script.sol";
 contract ScanShard is Script {
     using {toOp} for bytes1;
 
-    function run() public {
+    function run() public view {
         // SET THIS
         address shard;
 
