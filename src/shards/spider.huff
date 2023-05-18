@@ -1,0 +1,41 @@
+// -------------------------------------------------------------------------------------------------
+//! # Spider Shard
+//!
+//! Read-only batch storage crawler.
+
+#include "../lib/libcast.huff"
+
+/// ## Function Signature
+#define function crawl() nonpayable returns ()
+
+/// ## Entry Point
+///
+/// ### Encoding Scheme
+///
+/// `selector . (slot)+`
+///
+/// | name      | size (bytes) |
+/// | --------- | ------------ |
+/// | selector  | 4            |
+/// | slots     | slots_len    |
+#define macro MAIN() = takes (0) returns (0) {
+    0x04                // [calldata_ptr]
+    loop_start:         // [calldata_ptr]
+        dup1            // [calldata_ptr, calldata_ptr]
+        calldataload    // [skey, calldata_ptr]
+        sload           // [value, calldata_ptr]
+        dup2            // [calldata_ptr, value, calldata_ptr]
+        mstore          // [calldata_ptr]
+        0x20            // [word_len, calldata_ptr]
+        add             // [new_calldata_ptr]
+        calldatasize    // [calldata_len, new_calldata_ptr]
+        dup2            // [new_calldata_ptr, calldata_len, new_calldata_ptr]
+        lt              // [ptr_lt_cd_len, new_calldata_ptr]
+        loop_start      // [loop_start_dest, ptr_lt_cd_len, new_calldata_ptr]
+        jumpi           // [new_calldata_ptr]
+    0x04                // [offset, new_calldata_ptr]
+    swap1               // [new_calldata_ptr, offset]
+    sub                 // [mem_len]
+    0x04                // [mem_ptr, mem_len]
+    return              // []
+}
