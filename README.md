@@ -123,7 +123,6 @@ is false, the transaction will revert. This satisfies the following invariants.
 
 - `Auth()` : authorization failure
 - `Deadline()` : deadline less than current block timestamp
-- `Dispatch()` : function selector was not matched to a built-in or shard
 
 ## Storage Layout
 

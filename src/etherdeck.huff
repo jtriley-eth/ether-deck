@@ -40,10 +40,8 @@
 ///
 /// ### Panics
 ///
-/// - If the selector does not map to a built-in function and the shard is not set.
 /// - If the dispatched built-in function reverts.
 /// - If the shard reverts.
-/// - If the selector neither maps to a shard nor a build-in function.
 #define macro MAIN() = takes(0) returns (0) {
     0x00 calldataload TO_U32()  // [selector]
 

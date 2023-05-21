@@ -9,35 +9,22 @@
 /// Deadline Exceeded Error.
 #define error Deadline()
 
-/// Dispatch Failure Error.
-#define error Dispatch()
-
 /// ## Throw Authentication Error
 #define macro THROW_AUTH() = takes (0) returns (0) {
-    __ERROR(Auth)   // [auth_err]
-    0x00            // [mem_ptr, auth_err]
-    mstore          // []
-    0x04            // [mem_len]
-    0x00            // [mem_ptr, mem_len]
-    revert          // []
+    0xab8a0360          // [auth_err]
+    0x00                // [mem_ptr, auth_err]
+    mstore              // []
+    0x04                // [mem_len]
+    0x1c                // [mem_ptr, mem_len]
+    revert              // []
 }
 
 /// ## Throw Deadline Error
 #define macro THROW_DEADLINE() = takes (0) returns (0) {
-    __ERROR(Deadline)   // [deadline_err]
+    0xc6f221aa          // [deadline_err]
     0x00                // [mem_ptr, deadline_err]
     mstore              // []
     0x04                // [mem_len]
-    0x00                // [mem_ptr, mem_len]
-    revert              // []
-}
-
-/// ## Throw Dispatch Error
-#define macro THROW_DISPATCH() = takes (0) returns (0) {
-    __ERROR(Dispatch)   // [dispatch_err]
-    0x00                // [mem_ptr, dispatch_err]
-    mstore              // []
-    0x04                // [mem_len]
-    0x00                // [mem_ptr, mem_len]
+    0x1c                // [mem_ptr, mem_len]
     revert              // []
 }

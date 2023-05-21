@@ -6,7 +6,6 @@ pragma solidity ^0.8.19;
 library DeckTools {
     error Auth();
     error Deadline();
-    error Syscall();
 
     /// @notice Encodes a setAuth call
     /// @param account The account to set authorization for
