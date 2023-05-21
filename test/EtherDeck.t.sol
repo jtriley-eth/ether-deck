@@ -654,7 +654,12 @@ contract EtherDeckTest is Test {
 
         (bool success,) = deck.call(payload);
 
-        assertFalse(success);
+        if (uint32(bytes4(payload)) == 0 || uint32(bytes4(payload)) > 4) {
+            assertTrue(success);
+        } else {
+            assertFalse(success);
+        }
+
         assertEq(uint256(vm.load(deck, dt.idSlot())), 0);
     }
 

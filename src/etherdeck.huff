@@ -56,8 +56,8 @@
     // checks if shard is set for selector
     TRY_USE_SHARD()
 
-    // if execution has not halted by now, revert
-    THROW_DISPATCH()
+    // halt execution gracefully. allows receiving ether
+    stop
 
     syscall: SYSCALL()
     set_auth: SET_AUTH()
