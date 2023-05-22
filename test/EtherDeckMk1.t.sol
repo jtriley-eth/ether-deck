@@ -9,7 +9,7 @@ import "lib/huff-runner/src/Deploy.sol";
 using {compile} for Vm;
 using {create} for bytes;
 
-contract EtherDeckTest is Test {
+contract EtherDeckMk1Test is Test {
     uint256 constant SECP256K1_ORDER = 115792089237316195423570985008687907852837564279074904382605163141518161494337;
 
     uint256 constant PK_ALICE = 1;
@@ -35,7 +35,7 @@ contract EtherDeckTest is Test {
     }
 
     function setUp() public asActor(alice) {
-        deck = vm.compile("src/etherdeck.huff").create({value: 0});
+        deck = vm.compile("src/etherdeck-mk1.huff").create({value: 0});
         mockTarget = address(new MockTarget());
     }
 

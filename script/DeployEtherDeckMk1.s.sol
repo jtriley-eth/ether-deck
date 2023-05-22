@@ -7,9 +7,9 @@ import "lib/huff-runner/src/Deploy.sol";
 using {compile} for Vm;
 using {create} for bytes;
 
-contract DeployEtherDeckScript is Script {
+contract DeployEtherDeckMk1Script is Script {
     function run() public {
-        bytes memory initcode = vm.compile("src/etherdeck.huff");
+        bytes memory initcode = vm.compile("src/etherdeck-mk1.huff");
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
 
         initcode.create({value: 0});

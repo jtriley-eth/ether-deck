@@ -36,7 +36,7 @@ contract DeckCoinsTest is Test {
         erc20 = new MockERC20("test token", "tt", 18);
         erc721 = new MockERC721("test token", "tt");
         erc1155 = new MockERC1155();
-        deck = vm.compile("src/etherdeck.huff").create({value: 0});
+        deck = vm.compile("src/etherdeck-mk1.huff").create({value: 0});
         shard = vm.compile("src/shards/recv.huff").create({value: 0});  
         __enableRecv();
     }

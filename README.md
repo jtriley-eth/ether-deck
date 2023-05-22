@@ -8,7 +8,7 @@ flowchart LR
     s1[signer 1]
     s2[signer 2]
     sc(syscall)
-    deck{etherdeck}
+    deck{etherdeck mk1}
     mcs[multicall shard]
     fls[flash loan shard]
     pss([public storage shard])
@@ -172,3 +172,4 @@ The list of tooling and libraries is limited at the moment.
 - [Multicall (Huff)](src/shards/multicall.huff): Optimized multicall, contiains auth check
 - [Public Storage (Huff)](src/shards/pubstore.huff): Public storage reader, read-only
 - [Recv (Huff)](src/shards/recv.huff): ERC721Receiver and ERC1155Receiver compliant, stateless
+- [Spider (Huff)](src/shards/spider.huff): Public storage crawler (batch), read-only
